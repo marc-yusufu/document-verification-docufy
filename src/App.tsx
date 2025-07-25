@@ -1,16 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useState } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Components
+import Header from "./components/Header";
+import Hero from "./components/Hero";
+import Steps from "./components/Steps";
+import Features from "./components/Features";
+import Footer from "./components/Footer";
+
+// Pages
+import ServicesPage from "./Screens/Services";
+import AboutUs from "./Screens/AboutUs";
+import Home from "./Screens/Home";
+import Upload from "./Screens/Upload";
+import SignUpScreen from "./Authentication/SignUp_Screen";
+import LoginScreen from "./Authentication/Login_Screen";
+import VerificationScreen from "./Authentication/Verification_screen";
+import SettingPage from "./Screens/Settings";
+
+// Main App
+const App = () => {
+  const location = useLocation();
+
+  // Loading & error states for future uploads or async actions
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Initialize AOS animation on mount
+  useEffect(() => {
+    AOS.init({ duration: 1000 });
+  }, []);
+
+  // Routes where header/footer should not appear
+  const hiddenRoutes = ["/login", "/signup", "/verify", "/home", "/upload", "/settings"];
+  const hideHeaderFooter = hiddenRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center">
-      <h1 className="text-4xl font-bold">It works 🎉</h1>
-    </div>
-  )
-}
+    <div className="font-sans">
+      {/* Show header unless on hidden routes */}
+      {!hideHeaderFooter && <Header />}
 
-export default App
+      {/* Optionally display loading or error states */}
+      {loading && (
+        <div className="text-center text-sm p-2 bg-yellow-100 text-yellow-800">
+          Upload in progress...
+        </div>
+      )}
+      {error && (
+        <div className="text-center text-sm p-2 bg-red-100 text-red-800">
+          Error: {error}
+        </div>
+      )}
+
+      <Routes>
+        {/* Landing Page */}
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero />
+              <Steps />
+              <Features />
+            </>
+          }
+        />
+
+        {/* Main pages */}
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/signup" element={<SignUpScreen />} />
+        <Route path="/verify" element={<VerificationScreen />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/upload" element={<Upload />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/settings" element={<SettingPage />} />
+      </Routes>
+
+      {/* Show footer unless on hidden routes */}
+      {!hideHeaderFooter && <Footer />}
+    </div>
+  );
+};
+
+export default App;
