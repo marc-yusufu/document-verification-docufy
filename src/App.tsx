@@ -24,25 +24,20 @@ import SettingPage from "./Screens/Settings";
 const App = () => {
   const location = useLocation();
 
-  // Loading & error states for future uploads or async actions
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Initialize AOS animation on mount
   useEffect(() => {
     AOS.init({ duration: 1000 });
   }, []);
 
-  // Routes where header/footer should not appear
   const hiddenRoutes = ["/login", "/signup", "/verify", "/home", "/upload", "/settings"];
   const hideHeaderFooter = hiddenRoutes.includes(location.pathname);
 
   return (
     <div className="font-sans">
-      {/* Show header unless on hidden routes */}
       {!hideHeaderFooter && <Header />}
 
-      {/* Optionally display loading or error states */}
       {loading && (
         <div className="text-center text-sm p-2 bg-yellow-100 text-yellow-800">
           Upload in progress...
@@ -55,7 +50,6 @@ const App = () => {
       )}
 
       <Routes>
-        {/* Landing Page */}
         <Route
           path="/"
           element={
@@ -78,7 +72,6 @@ const App = () => {
         <Route path="/settings" element={<SettingPage />} />
       </Routes>
 
-      {/* Show footer unless on hidden routes */}
       {!hideHeaderFooter && <Footer />}
     </div>
   );

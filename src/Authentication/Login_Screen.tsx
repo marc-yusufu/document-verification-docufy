@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebaseconfig';
 import { isValidSouthAfricanID } from './Utilities/validateID';
 import logo from '../assets/images/logopng.png';
+import Orb from '../components/Orb';
 
 function LoginScreen() {
   const [form, setForm] = useState({ idNumber: '', password: '' });
@@ -44,11 +45,12 @@ function LoginScreen() {
   };
 
   return (
-    <div className="flex h-screen w-full font-sans">
-      <div className="flex flex-col justify-center p-12 w-full md:w-1/2 bg-white">
-        <div className="flex justify-between mb-8 items-start">
+    <div className="flex h-screen w-full font-sans overflow-hidden">
+      {/* Left Panel */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center px-12 py-10 bg-white z-10">
+        <div className="flex justify-between items-start mb-10">
           <Link to="/">
-            <img src={logo} alt="Logo" className="h-10 mb-2 object-contain" />
+            <img src={logo} alt="Logo" className="h-10 object-contain" />
           </Link>
           <div className="flex gap-6 text-blue-600 font-medium text-sm">
             <Link to="/services" className="hover:underline">Services</Link>
@@ -93,7 +95,9 @@ function LoginScreen() {
         </button>
       </div>
 
-      <div className="hidden md:block w-1/2 bg-blue-600"></div>
+      {/* Right Panel */}
+      <div className="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700">
+      </div>
     </div>
   );
 }
