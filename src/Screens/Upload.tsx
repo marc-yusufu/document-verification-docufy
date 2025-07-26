@@ -10,8 +10,8 @@ export default function Upload() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
-  const handleBrowseClick = () => {
-    fileInputRef.current?.click();
+  const handleBrowseClick = () => { //No change
+    fileInputRef.current?.click(); 
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,7 +149,7 @@ export default function Upload() {
           </button>
 
           {/* Result Message */}
-          {result && <p className="text-green-600 text-sm">{result}</p>}
+          {result && <p className="text-green-600 text-sm"></p>}
         </form>
       </main>
     </div>
