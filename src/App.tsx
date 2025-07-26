@@ -15,6 +15,7 @@ import ServicesPage from "./Screens/Services";
 import AboutUs from "./Screens/AboutUs";
 import Home from "./Screens/Home";
 import Upload from "./Screens/Upload";
+import UploadFile from "./Screens/UploadFile";
 import SignUpScreen from "./Authentication/SignUp_Screen";
 import LoginScreen from "./Authentication/Login_Screen";
 import VerificationScreen from "./Authentication/Verification_screen";
@@ -66,7 +67,7 @@ const App = () => {
         <Route path="/signup" element={<SignUpScreen />} />
         <Route path="/verify" element={<VerificationScreen />} />
         <Route path="/home" element={<Home />} /> 
-        <Route path="/" element={<Upload />} />
+        <Route path="/" element={<UploadFile />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/settings" element={<SettingPage />} />

@@ -10,7 +10,7 @@ type uploadedFiles = {
     lastModified: number;
 }
 
-export default function Upload(){
+export default function UploadFile(){
 
     /*for openCV resizing and denoising*/
     const canvasInputRef = useRef<HTMLCanvasElement>(null);
