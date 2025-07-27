@@ -85,7 +85,7 @@ export default function MainHeader() {
 
       <div className="flex items-center gap-6">
         <button
-          onClick={() => navigate("/add")}
+          onClick={() => navigate("/upload")}
           aria-label="Add"
           className="p-1 rounded hover:bg-blue-100 transition"
         >

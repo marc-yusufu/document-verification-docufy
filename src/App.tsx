@@ -37,7 +37,7 @@ const App = () => {
 
   return (
     <div className="font-sans">
-      {!hideHeaderFooter && <Header />}
+      {!hideHeaderFooter  }
 
       {loading && (
         <div className="text-center text-sm p-2 bg-yellow-100 text-yellow-800">
@@ -67,7 +67,8 @@ const App = () => {
         <Route path="/signup" element={<SignUpScreen />} />
         <Route path="/verify" element={<VerificationScreen />} />
         <Route path="/home" element={<Home />} /> 
-        <Route path="/" element={<UploadFile />} />
+        <Route path="/" element={<Upload />} />
+        <Route path="upload" element={<UploadFile />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/settings" element={<SettingPage />} />
