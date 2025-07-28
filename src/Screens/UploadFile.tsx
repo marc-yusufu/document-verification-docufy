@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from "react"
 import { CarIcon, CloudUpload, DoorClosedIcon } from "lucide-react"; 
 import {jsPDF} from "jspdf";
 import MainHeader from "../components/mainHeader";
+import { usePdf } from "../Context/PdfContext";
+import { generateStampedPdf } from "../utils/generateStamp";
+
+
+import { useNavigate } from "react-router-dom";
 
 
 type uploadedFiles = {
@@ -24,6 +29,10 @@ export default function UploadFile(){
         };
     }, []);
 
+    const navigate = useNavigate();
+    
+    const {setPdfDataUrl, addOrUpdateDocument} = usePdf();
+
     /*for openCV resizing and denoising*/
     const canvasInputRef = useRef<HTMLCanvasElement>(null);
     const canvasOutputRef = useRef<HTMLCanvasElement>(null);
@@ -42,6 +51,8 @@ export default function UploadFile(){
     const [submitAttempted, setSubmitAttempted] = useState(false);
 
     const [cvReady, setCvReady] = useState(false);
+
+    const [redirecting, setRedirecting] = useState(false);
 
 
 
@@ -135,14 +146,40 @@ export default function UploadFile(){
         setResult(null);
         setError(null);
 
-        // Simulated upload
-        setTimeout(() => {
-        setUploading(false);
+        const reader = new FileReader();
+        reader.onload = () =>{
+            const pdfUrl = reader.result as string;
+
+            setPdfDataUrl(pdfUrl);
+
+            addOrUpdateDocument({
+                id: crypto.randomUUID(),
+                name: file.name,
+                status: "verified", // or "Checking", etc.
+                pdfDataUrl: pdfUrl,
+            })
+        }
+
         setResult("Upload successful!");
         setFile(null);
         setTypeOfFile("");
         setSubmitAttempted(false);
+
+        // Simulated upload
+        setTimeout(() => {
+            setUploading(false);
+            setResult("Upload successful!");
+            setFile(null);
+            setTypeOfFile("");
+            setSubmitAttempted(false);
+
+            setTimeout(() => { //load time after submit
+                setRedirecting(true);
+                navigate("/home") //navigate to home page
+            }, 1000);
+
         }, 2000);
+        reader.readAsDataURL(file);
     };
 
     /*openCV image processing*/
@@ -190,7 +227,17 @@ export default function UploadFile(){
 
 
     /*Passing image to a PDF*/
-    const generatePDF = (canvas: HTMLCanvasElement) =>{
+    const generatePDF = async (canvas: HTMLCanvasElement) =>{
+
+        const stampUrl = "/logopng.png";
+
+        try {
+            const stampedPdfUrl = await generateStampedPdf(canvas, stampUrl);
+            setPdfDataUrl(stampedPdfUrl);
+        } catch (err) {
+            console.error("Failed to generate stamped PDF:", err);
+        }
+
         const A4_width = 595;
         const A4_height = 842;
         const margin = 20;
@@ -204,8 +251,8 @@ export default function UploadFile(){
 
         const aspectRatio = canvas.width / canvas.height;
         //allowed w and h within margin
-        const maxWidth = A4_width - margin * 2;
-        const maxHeight = A4_height - margin * 2;
+        const maxWidth = A4_width - margin * 4;
+        const maxHeight = A4_height - margin * 4;
 
         let imageWidth = maxWidth;
         let imageHeight = maxWidth / aspectRatio;
@@ -219,7 +266,26 @@ export default function UploadFile(){
         const x = (A4_width - imageWidth) / 2;
         const y = (A4_height - imageHeight) / 2;
 
+        pdf.setFillColor(255,255,255)
+        pdf.rect(0,0, A4_width, A4_height, 'F')
         pdf.addImage(imgData, "PNG", x, y, imageWidth, imageHeight);
+
+        // Define stamp size and position
+        const stampWidth = 80;
+        const stampHeight = 80;
+        const stampX = A4_width - stampWidth - margin;
+        const stampY = A4_height - stampHeight - margin;
+
+        pdf.addImage(stampUrl, "PNG", stampX, stampY, stampWidth, stampHeight);
+
+        //convert to DataURL to store in cthe context
+
+        
+
+        const dataUrl = pdf.output("datauristring");
+        setPdfDataUrl(dataUrl);
+
+        //for download
         pdf.save(fileName+".pdf");
     };
     
@@ -230,7 +296,7 @@ export default function UploadFile(){
                 <p className="text-yellow-600 font-medium mb-4">Loading OpenCV... please wait</p>
             )}
 
-            <form onSubmit={handleSubmit} className="flex justify-center flex-col items-center mt-10">
+            <form onSubmit={handleSubmit} className="flex justify-center flex-col items-center mt-10 mb-10">
                 <div className="w-[90%] flex flex-row justify-between mb-3">            
                     <h1 className=" font-medium text-[20px]">Upload File</h1>
                     <h1 className="pr-53 font-medium text-[20px]">Recently Uploaded</h1>
@@ -356,26 +422,25 @@ export default function UploadFile(){
                         type="submit"
                         disabled={uploading || !cvReady}
                         className={`p-2 rounded-lg text-white bg-[#3376F3] w-[152px] ${
-                            uploading || cvReady ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-900"
+                            uploading || !cvReady ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-900"
                         }`}
                     >
                         {uploading ? "Uploading..." : "Submit"}
                     </button>
                     
                     {/*test button for downloads*/}
-                    <button 
+                    {/* <button 
                         type="button"
                         onClick={() => { 
                         const canvas = canvasOutputRef.current!;    
                         if (canvas) {
-                            console.error("Output canvas is not available");
                             generatePDF(canvas);
                         }
                         }}
                         className="p-2 rounded-lg text-white bg-[#3376F3] w-[152px]"
                     >
                     Download PDF
-                    </button>
+                    </button> */}
 
                     {/*result message*/}
                 </div>
