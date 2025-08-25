@@ -1,4 +1,4 @@
-import SplitText from "../components/splitText";
+import SplitText from "./splitText";
 import RotatingText from "./rotatingText";
 
 const Hero = () => {
