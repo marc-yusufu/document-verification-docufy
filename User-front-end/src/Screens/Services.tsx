@@ -1,29 +1,33 @@
 import React from "react";
+import Header from "../components/Header";
+
 
 const services = [
   {
     title: "Document Upload Portal",
     description:
       "Citizens can scan and submit their documents using our intuitive web or mobile interface. No more waiting in long lines.",
-    icon: "📄",
+    image: '/public/IconPac/uploadImg.png',
   },
   {
     title: "Automated Verification",
     description:
       "Our system securely cross-checks submitted documents with official government databases using leading OCR and cloud-based technologies such as Google Vision API and Azure Cognitive Services.",
-    icon: "✅",
+    image: '/public/IconPac/verificationImg.png',
   },
   {
     title: "Digital Certification",
     description:
       "Verified documents are digitally certified and sent back to the user quickly, safely and transparently.",
-    icon: "🔒",
+    image: '/public/IconPac/certifiedImg.png',
   },
 ];
+
 
 const ServicesPage = () => {
   return (
     <section className="px-4 py-12 max-w-6xl mx-auto mt-16">
+      <Header />
       <h1 className="text-4xl font-bold text-blue-800 mb-8 text-center">
         Our Services
       </h1>
@@ -43,7 +47,7 @@ const ServicesPage = () => {
             key={index}
             className="p-6 rounded-lg shadow-md bg-white cursor-pointer transition duration-300 hover:shadow-lg"
           >
-            <div className="text-5xl mb-4">{service.icon}</div>
+            <img src={service.image} alt={service.title} className="w-20 h-20 mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2 text-blue-800">
               {service.title}
             </h3>

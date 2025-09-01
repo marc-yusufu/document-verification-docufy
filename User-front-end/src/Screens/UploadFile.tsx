@@ -1,450 +1,240 @@
-import { useState, useRef, useEffect } from "react"
-import { CarIcon, CloudUpload, DoorClosedIcon } from "lucide-react"; 
-import {jsPDF} from "jspdf";
-import MainHeader from "../components/mainHeader";
-import { usePdf } from "../Context/PdfContext";
-import { generateStampedPdf } from "../utils/generateStamp";
+import React, { useState, useRef, useEffect } from "react";
+import { supabase } from "../Authentication/supabaseconfig"; // adjust path to your Supabase client
+import jsPDF from "jspdf";
 
-
-import { useNavigate } from "react-router-dom";
-
-
-type uploadedFiles = {
-    name: string;
-    lastModified: number;
+interface UploadedDoc {
+    document_id: string;
+    type: string;
+    file_url: string;
+    submitted_at: string;
+    signed_url?: string; // Optional, for signed URL after upload
 }
 
-export default function UploadFile(){
+export default function DocumentUpload() {
+    const [selectedType, setSelectedType] = useState<string>("");
+    const [file, setFile] = useState<File | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [recentDocs, setRecentDocs] = useState<UploadedDoc[]>([]);
+
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if (window.cv && window.cv.imread) {
-            setCvReady(true);
-            return;
-        }
-
-        window.cv = window.cv || {};
-        window.cv['onRuntimeInitialized'] = () => {
-            console.log("OpenCV ready.");
-            setCvReady(true); // optional: track when cv is loaded
-        };
+        fetchRecentDocs();
     }, []);
 
-    const navigate = useNavigate();
-    
-    const {setPdfDataUrl, addOrUpdateDocument} = usePdf();
-
-    /*for openCV resizing and denoising*/
-    const canvasInputRef = useRef<HTMLCanvasElement>(null);
-    const canvasOutputRef = useRef<HTMLCanvasElement>(null);
-
-
-    const [file, setFile] = useState<File | null>(null);
-    const [fileName, setFileName] = useState("");
-    const [fileSizeInBytes, setFileSizeInBytes] = useState<number>(0)
-    const fileSizeInMB = (fileSizeInBytes/(1024 * 1024)).toFixed(2)
-    const [typeOfFile, setTypeOfFile] = useState<string>("");
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [recentlyUploaded, setRecentlyUploaded] = useState<uploadedFiles[]>([]);
-    const [uploading, setUploading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [submitAttempted, setSubmitAttempted] = useState(false);
-
-    const [cvReady, setCvReady] = useState(false);
-
-    const [redirecting, setRedirecting] = useState(false);
-
-
-
-
-    var uploadDate : Date = new Date();
-    const year = uploadDate.getFullYear();
-    const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
-    const day = uploadDate.getDate();
-    const formattedDate = `${year}/${month}/${day}`;
-
-    const handleTypeSelect = (type: string) => {
-        setTypeOfFile(type);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const uploadedFile = event.target.files?.[0];
+        if (uploadedFile) {
+            setFile(uploadedFile);
+        }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) =>{
-        const fileInput = e.target.files?.[0];
-        if (!fileInput) return;
-
-        setFile(fileInput);
-        setResult(null);
-        setFileName(fileInput.name);
-        setFileSizeInBytes(fileInput.size);
-        handleUploadLoading();
-
-        const recentFiles = e.target.files ? Array.from(e.target.files).map(file => ({
-            name: file.name,
-            lastModified: file.lastModified,
-        })) : [];
-        setRecentlyUploaded(prev => [...prev, ...recentFiles]);
-        
-
-        /*openCV section*/
-        const reader = new FileReader();
-
-        reader.onload = (e) =>{
+    const processImageWithOpenCV = async (file: File): Promise<HTMLCanvasElement> => {
+        return new Promise((resolve, reject) => {
             const img = new Image();
-            img.src = e.target?.result as string;
-
-            img.onload = () =>{
-                const canvas = canvasInputRef.current;
-                if(!canvas) return;
-                const ctxInput = canvas?.getContext("2d");
-
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctxInput?.drawImage(img, 0, 0);
-
-                if(window.cv && window.cv.imread){
-                    processImage();
-                }else{
-                    //window.cv['onRuntimeInitialized'] = processImage;
-                    console.warn("cv not ready")
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const cv = (window as any).cv;
+                if (!cv) {
+                    reject(new Error("OpenCV not loaded"));
+                    return;
                 }
+                const src = cv.imread(img);
+                const dst = new cv.Mat();
+                cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+                cv.imshow(canvasRef.current!, dst);
+                src.delete();
+                dst.delete();
+                resolve(canvasRef.current!);
             };
-        };
-        reader.readAsDataURL(fileInput);
-    }
-    
-
-    const handleInputRef =()=>{ //no change
-            inputRef.current?.click();
+            img.onerror = reject;
+        });
     };
 
-    const handleUploadLoading = () => { //no change
-        setUploading(true);
-        setTimeout(() => {
-            setUploading(false);
-            setResult("Upload Completed");
-        }, 2000);
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setSubmitAttempted(true);
-        if (!file && !typeOfFile) {
-            setError("Please select a file and document type.");
-            return;
-        }
-
-        if (!file) {
-            setError("Please select a file.");
-            return;
-        }
-
-        if (!typeOfFile) {
-            setError("Please select the type of document you are uploading.");
-            return;
-        }
-
-        setUploading(true);
-        setResult(null);
-        setError(null);
-
-        const reader = new FileReader();
-        reader.onload = () =>{
-            const pdfUrl = reader.result as string;
-
-            setPdfDataUrl(pdfUrl);
-
-            addOrUpdateDocument({
-                id: crypto.randomUUID(),
-                name: file.name,
-                status: "verified", // or "Checking", etc.
-                pdfDataUrl: pdfUrl,
-            })
-        }
-
-        setResult("Upload successful!");
-        setFile(null);
-        setTypeOfFile("");
-        setSubmitAttempted(false);
-
-        // Simulated upload
-        setTimeout(() => {
-            setUploading(false);
-            setResult("Upload successful!");
-            setFile(null);
-            setTypeOfFile("");
-            setSubmitAttempted(false);
-
-            setTimeout(() => { //load time after submit
-                setRedirecting(true);
-                navigate("/home") //navigate to home page
-            }, 1000);
-
-        }, 2000);
-        reader.readAsDataURL(file);
-    };
-
-    /*openCV image processing*/
-    const processImage = () => {
-        if (!canvasInputRef.current || !canvasOutputRef.current) return;
-
-        const src = window.cv.imread(canvasInputRef.current);
-        //const resized = new cv.Mat();
-        const gray = new cv.Mat();
-        //const denoised = new cv.Mat();
-        //const blurred = new cv.Mat();
-        //const sharpened = new cv.Mat();
-        const output = new cv.Mat();
-
-        const size = new window.cv.Size(150, 150);
-
-        // Resize
-        //window.cv.resize(src, resized, size, 0, 0, window.cv.INTER_AREA);
-
-        // Convert to grayscale
-        window.cv.cvtColor(src, gray, window.cv.COLOR_RGBA2GRAY);
-        
-        // Convert to RGBA
-        window.cv.cvtColor(gray, output, window.cv.COLOR_GRAY2RGBA);
-
-        // Match output canvas size to original image dimensions
-        canvasOutputRef.current.width = src.cols;
-        canvasOutputRef.current.height = src.rows;
-
-        // Show the processed image
-        window.cv.imshow(canvasOutputRef.current, output);
-        console.log("Processing image into black abnd white")
-        // Wait for canvas to visually update, then generate PDF
-        setTimeout(() => {
-            generatePDF(canvasOutputRef.current!);
-        }, 500);
-
-        // Cleanup
-        src.delete();
-        //resized.delete();
-        gray.delete();
-        output.delete();
-    };
-
-
-
-    /*Passing image to a PDF*/
-    const generatePDF = async (canvas: HTMLCanvasElement) =>{
-
-        const stampUrl = "/logopng.png";
-
-        try {
-            const stampedPdfUrl = await generateStampedPdf(canvas, stampUrl);
-            setPdfDataUrl(stampedPdfUrl);
-        } catch (err) {
-            console.error("Failed to generate stamped PDF:", err);
-        }
-
-        const A4_width = 595;
-        const A4_height = 842;
-        const margin = 20;
-
-        const imgData = canvas.toDataURL("image/png");
+    const generatePDF = (canvas: HTMLCanvasElement): Blob => {
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const pdf = new jsPDF({
             orientation: "portrait",
-            unit: "px",
-            format: [A4_width, A4_height],
+            unit: "mm",
+            format: "a4",
         });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgWidth = pageWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        const yPos = (pageHeight - imgHeight) / 2;
+        pdf.addImage(imgData, "JPEG", 0, yPos, imgWidth, imgHeight);
+        return pdf.output("blob") as Blob;
+    };
 
-        const aspectRatio = canvas.width / canvas.height;
-        //allowed w and h within margin
-        const maxWidth = A4_width - margin * 4;
-        const maxHeight = A4_height - margin * 4;
 
-        let imageWidth = maxWidth;
-        let imageHeight = maxWidth / aspectRatio;
+    const uploadToSupabase = async (pdfBlob: Blob) => {
+        if (!file) return;
 
-        if(imageHeight > maxHeight){
-            imageHeight = maxHeight;
-            imageWidth = maxHeight * aspectRatio;
+        const user = (await supabase.auth.getUser()).data.user;
+        if (!user) throw new Error("Not authenticated");
+
+        // Sanitize filename (remove spaces, special chars)
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const fileName = `${Date.now()}_${safeName}.pdf`;
+        const filePath = `${user.id}/${fileName}`;
+
+        // Upload file to Supabase Storage
+        const { error: storageError } = await supabase.storage
+            .from("Documents")
+            .upload(filePath, pdfBlob, { contentType: "application/pdf" });
+
+        if (storageError) throw storageError;
+
+        // Generate signed URL (valid for 7 days)
+        const { data: signedData, error: signedError } = await supabase.storage
+            .from("Documents")
+            .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+
+        if (signedError) throw signedError;
+
+        // Insert metadata into Postgres table
+        const { error: insertError } = await supabase.from("documents").insert([
+            {
+                user_id: user.id,
+                type: selectedType,
+                file_url: filePath, // store exact storage path
+                status: "pending",
+                submitted_at: new Date().toISOString(),
+            },
+        ]);
+
+        if (insertError) throw insertError;
+
+        return signedData.signedUrl;
+    };
+
+
+    const handleSubmit = async () => {
+        setError(null);
+        if (!file) {
+            setError("Please upload a file");
+            return;
+        }
+        if (!selectedType) {
+            setError("Please select a document type");
+            return;
         }
 
-        //center image on pdf
-        const x = (A4_width - imageWidth) / 2;
-        const y = (A4_height - imageHeight) / 2;
-
-        pdf.setFillColor(255,255,255)
-        pdf.rect(0,0, A4_width, A4_height, 'F')
-        pdf.addImage(imgData, "PNG", x, y, imageWidth, imageHeight);
-
-        // Define stamp size and position
-        const stampWidth = 80;
-        const stampHeight = 80;
-        const stampX = A4_width - stampWidth - margin;
-        const stampY = A4_height - stampHeight - margin;
-
-        pdf.addImage(stampUrl, "PNG", stampX, stampY, stampWidth, stampHeight);
-
-        //convert to DataURL to store in cthe context
-
-        
-
-        const dataUrl = pdf.output("datauristring");
-        setPdfDataUrl(dataUrl);
-
-        //for download
-        pdf.save(fileName+".pdf");
+        setLoading(true);
+        try {
+            const canvas = await processImageWithOpenCV(file);
+            const pdfBlob = generatePDF(canvas);
+            await uploadToSupabase(pdfBlob);
+            await fetchRecentDocs();
+            setFile(null);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
-    
-    return(
-        <div>
-            <MainHeader/>
-            {!cvReady && (
-                <p className="text-yellow-600 font-medium mb-4">Loading OpenCV... please wait</p>
-            )}
 
-            <form onSubmit={handleSubmit} className="flex justify-center flex-col items-center mt-10 mb-10">
-                <div className="w-[90%] flex flex-row justify-between mb-3">            
-                    <h1 className=" font-medium text-[20px]">Upload File</h1>
-                    <h1 className="pr-53 font-medium text-[20px]">Recently Uploaded</h1>
-                </div>
-                <div className=" flex justify-between flex-row w-[90%] h-[300px] mb-10">
-                    <div className="w-[66%] h-full flex">
-                        <label htmlFor="fileInput" className="border-dashed border-1 w-full rounded-lg items-center justify-center flex flex-col bg-[#e5efff99] hover:bg-[#e8edff]">
-                            <CloudUpload className="mx-auto h-10 w-10 text-gray-500 mb-2" />
-                            {fileName? (
-                                <div className="flex w-full flex-col items-center">
-                                    <p className="text-[#4ce303] font-bold">{uploading? <span className="text-[#2a30f9]">Uplaoding file...</span>  : result}</p>
-                                    <p className="font-medium">{fileName} {fileSizeInMB}MB</p>
-                                </div>) 
-                            : (
-                            <div className="flex justify-center flex-col w-full items-center">
-                                <p className="p-5 text-[14px] text-gray-500">Max 120 MB (PNG, JPEG, PDF)</p>
-                                <p className="p-2 text-[18px] font-medium">Drag and drop </p> 
-                                <p className="mb-3">or</p>
-                                <button type="button" onClick={handleInputRef} className="bg-[#3376F3] w-[152px] p-2 text-white hover:bg-blue-600 rounded-lg">Browse file</button>
+    const fetchRecentDocs = async () => {
+        const { data, error } = await supabase
+            .from("documents")
+            .select("*")
+            .order("submitted_at", { ascending: false })
+            .limit(5);
 
-                            </div>)}
-                        </label>
-                        <input type="file"
-                        ref={inputRef}
-                        id="fileInput"
-                        hidden = {true}
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        disabled={!cvReady}
-                        onChange = {handleFileChange}/>
-                    </div>
+        if (!error && data) {
+            // Create signed URLs for each doc
+            const signedDocs = await Promise.all(
+                data.map(async (doc) => {
+                    const { data: signed, error: signErr } = await supabase.storage
+                        .from("Documents")
+                        .createSignedUrl(doc.file_url, 60 * 60 * 24 * 7); // 7 days
 
-                        {/*Recently uploaded container*/}
-                    <div className="max-h-[300px] overflow-y-auto border-1 border-gray-200 rounded-lg w-[30%] bg-[#ffffff] p-5">
-                        {recentlyUploaded.length > 0 ? (
-                            <ul className="text-[14px] p-2">
-                                {recentlyUploaded.map((file, index) => (
-                                    <li 
-                                        key={index}
-                                        className="p-4 mb-2 border-1 rounded-lg border-gray-300 shadow-sm hover:shadow-md transition-all"
-                                    >
-                                        <p className="break-all font-semibold text-gray-700 text-sm">{file.name}</p>
-                                        <p className="text-gray-500 text-xs mt-1">{formattedDate}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                                <p className="text-[#b8b8b8] text-2xl">No recent files</p>
-                            </div> 
-                        )}
+                    return {
+                        ...doc,
+                        signed_url: signErr ? null : signed?.signedUrl,
+                    };
+                })
+            );
+            setRecentDocs(signedDocs as any);
+        }
+    };
 
-                    </div>
-                </div>
+    return (
+        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow">
+            <h2 className="text-2xl font-bold mb-4">Upload Document</h2>
 
-                {/*Canvas elements*/}
-                <canvas ref={canvasInputRef} id="canvasInput" className="hidden"/>
-                <canvas ref={canvasOutputRef} id="canvasOutput" className="hidden"/>
+            {/* Document Type Selector */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+                {["Proof of Identity", "Proof of Residence", "Additional Documents"].map(
+                    (type) => (
+                        <div
+                            key={type}
+                            onClick={() => setSelectedType(type)}
+                            className={`cursor-pointer p-4 border rounded-lg text-center ${selectedType === type ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                                }`}
+                        >
+                            {type}
+                        </div>
+                    )
+                )}
+            </div>
 
+            {/* File Input */}
+            <div className="border-2 border-dashed p-6 text-center mb-4">
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="fileInput"
+                />
+                <label htmlFor="fileInput" className="cursor-pointer text-blue-600">
+                    {file ? file.name : "Click to upload or drag and drop"}
+                </label>
+            </div>
 
-                <div className="flex justify-start w-[90%]">
-                    <h1 className="text-[24px]">File Type</h1>
-                </div>
-                        {/*file types block*/}
-                <div className="w-[90%] flex flex-row mt-5">
-                    {/*proof of identity*/}
-                    <div 
-                        onClick={() => handleTypeSelect("identity")}
-                        className={`border-1 w-[330px] h-[350px] p-2 rounded-lg bg mr-5 hover:bg-[#C9DCFF99] transition-transform duration-300 ease-in-out hover:scale-105 ${
-                            typeOfFile==="identity" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"}`}>
-                        <h1 className="text-[20px] font-medium mb-2">Proof of Identity</h1>
-                        <ul className="list-disc pl-5">
-                            <li>South African Smart ID Card</li>
-                            <li>Green Barcoded ID Book</li>
-                            <li>Valid Passport (for South African citizens and foreign nationals)</li>
-                            <li>Drivers License</li>
-                        </ul>  
-                    </div>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
 
-                    {/*proof of residence*/}
-                    <div 
-                        onClick={()=> handleTypeSelect("residence")}
-                        className={`border-1 w-[330px] h-[350px] p-2 rounded-lg bg mr-5 hover:bg-[#C9DCFF99] transition-transform duration-300 ease-in-out hover:scale-105 ${
-                            typeOfFile === "residence" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"}`}>
-                        <h1 className="text-[20px] font-medium m-2">Proof of Residential Adrress</h1>
-                        <ul className="list-disc pl-5">
-                            <li>Utility Bills (e.g, electricity, water, or rates bills)</li>
-                            <li>Bank Statements</li>
-                            <li>Lease or Rental Agreements</li>
-                            <li>Municipal Rates and Taxes Iinvoices</li>
-                            <li>TelePhone or Cellular Account Statements</li>
-                            <li>Insurance Policy Documents</li>
-                            <li>Motor Vehicle License Documents</li>
-                            <li>Retail Store Account Statements</li>
-                        </ul>
-                        
-                    </div>
-                    
-                    {/*additional documents*/}
-                    <div 
-                        onClick={()=> handleTypeSelect("additional")}
-                        className={`border-1 w-[330px] h-[350px] p-2 rounded-lg bg mr-5 hover:bg-[#C9DCFF99] transition-transform duration-300 ease-in-out hover:scale-105 ${
-                            typeOfFile === "additional" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"}`}>
-                        <h1 className="text-[20px] font-medium mb-2">Additioinal Documents</h1>
-                        <ul className="list-disc pl-5">
-                            <li>Affidavit or Police Statement</li>
-                            <li>Proof of INcome Tax Number</li>
-                            <li>Cancelled Cheque or Bank Statement</li> {/*repeated document */}
-                            <li>Tax Clearance Certificate</li>
-                            <li>Pay Slips or Employment Contracts</li>
-                            <li>Authority Documents(if acting on behalf of another)</li>
-                        </ul>
-                        
-                    </div>
-                </div>
+            {/* Hidden Canvas for OpenCV */}
+            <canvas ref={canvasRef} style={{ display: "none" }} />
 
-                {/*error message*/}
-                {submitAttempted && error && (<p className="text-red-600 text-sm">{error}</p>)}
+            <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+                {loading ? "Processing..." : "Upload Document"}
+            </button>
 
-                <div className="flex flex-row w-[90%] mt-10 mb-30">
-                    <button className="p-2 rounded-lg text-white bg-[#F21111] mr-10 w-[152px]">Cancel</button>
-
-                    <button 
-                        type="submit"
-                        disabled={uploading || !cvReady}
-                        className={`p-2 rounded-lg text-white bg-[#3376F3] w-[152px] ${
-                            uploading || !cvReady ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-900"
-                        }`}
-                    >
-                        {uploading ? "Uploading..." : "Submit"}
-                    </button>
-                    
-                    {/*test button for downloads*/}
-                    {/* <button 
-                        type="button"
-                        onClick={() => { 
-                        const canvas = canvasOutputRef.current!;    
-                        if (canvas) {
-                            generatePDF(canvas);
-                        }
-                        }}
-                        className="p-2 rounded-lg text-white bg-[#3376F3] w-[152px]"
-                    >
-                    Download PDF
-                    </button> */}
-
-                    {/*result message*/}
-                </div>
-            </form>
+            {/* Recently Uploaded */}
+            <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-2">Recently Uploaded</h3>
+                <ul className="space-y-2">
+                    {recentDocs.map((doc) => (
+                        <li key={doc.document_id} className="border-b pb-2">
+                            {doc.signed_url ? (
+                                <a
+                                    href={doc.signed_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 underline"
+                                >
+                                    {doc.type}
+                                </a>
+                            ) : (
+                                <span className="text-gray-500">{doc.type}</span>
+                            )}
+                            <span className="text-gray-500 text-sm ml-2">
+                                {new Date(doc.submitted_at).toLocaleString()}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
-    )
+    );
 }

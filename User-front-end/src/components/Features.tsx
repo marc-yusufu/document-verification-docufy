@@ -9,10 +9,10 @@ const Features = () => {
           <span className="text-blue-700">AI-driven accuracy</span>, and{" "}
           <span className="text-purple-500">secure digital verification</span>, all in one place.
         </p>
-        <Link to="/home">
-        <button className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">
-          Get Started
-        </button>
+        <Link to="/signup">
+          <button className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">
+            Get Started
+          </button>
         </Link>
       </div>
       <div className="md:flex-1 flex justify-center" data-aos="fade-left">

@@ -95,34 +95,34 @@ export default function SettingPage() {
               onClick={() => handleScroll(section1)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
             >
-              <img src="/images/user (2).png" alt="User" className="w-4 h-4" />
+              <img src="/public/IconPac/user (2).png" alt="User" className="w-4 h-4" />
               Account Settings
             </button>
             <button
               onClick={() => handleScroll(section2)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
             >
-              <img src="/images/lock.png" alt="Lock" className="w-4 h-4" />
+              <img src="/public/IconPac/lock.png" alt="Lock" className="w-4 h-4" />
               Security Settings
             </button>
             <button
               onClick={() => handleScroll(section3)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
             >
-              <img src="/images/bell.png" alt="Bell" className="w-4 h-4" />
+              <img src="/public/IconPac/bell-notification-social-media.png" alt="Bell" className="w-4 h-4" />
               Notification Preferences
             </button>
             <button
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
             >
-              <img src="/images/moon.png" alt="Theme" className="w-4 h-4" />
+              <img src="/public/IconPac/moon.png" alt="Theme" className="w-4 h-4" />
               Theme
             </button>
             <button
               onClick={() => handleScroll(section4)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
             >
-              <img src="/images/user-headset (2).png" alt="Support" className="w-4 h-4" />
+              <img src="/public/IconPac/user-headset (2).png" alt="Support" className="w-4 h-4" />
               Support & Feedback
             </button>
           </nav>

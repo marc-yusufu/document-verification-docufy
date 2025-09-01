@@ -8,12 +8,12 @@ const Footer = () => {
           <p className="font-bold mb-2">Company</p>
           <ul>
           <li>
-              <Link to="/src/Screens/AboutUs.tsx" className="hover:underline cursor-pointer">
+              <Link to="/about" className="hover:underline cursor-pointer">
                 About Us
               </Link>
             </li>
             <li>
-              <Link to="/src/Screens/Services.tsx" className="hover:underline cursor-pointer">
+              <Link to="/services" className="hover:underline cursor-pointer">
                 Services
               </Link>
             </li>

@@ -1,59 +1,53 @@
-import Document from '../../models/Document';
-//const express = require('express');
-//const multer = require('multer');
-import express from 'express';
-import multer from 'multer';
-
+import express from "express";
+import multer from "multer";
+import { supabase } from "../config/supabaseClient.js";
 
 const router = express.Router();
 
-// Multer setup: store files locally in "uploads" folder
-//User uploads document
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  }
-});
+// Multer in-memory storage (no saving to disk)
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Assuming you already connected to MongoDB and have `db`
-let db; // set this from your MongoDB connection
-
-app.post("/upload", upload.single("file"), async (req, res) => {
+// Upload document
+router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    const newDocument = await Document.create({
-      fileName: req.file.originalname,
-      filePath: req.file.path,
-      fileType: req.file.mimetype,
-      uniqueCode: Math.random().toString(36).substring(2,8).toUpperCase(),
-      status: 'pending'
-    });
-    //await db.collection('documents').insertOne(fileData);
-    res.json({ success: true, message: 'File uploaded', document: newDocument });
+    const userId = req.body.user_id; // or from auth middleware
+    const { type } = req.body;
+
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const fileExt = req.file.originalname.split(".").pop();
+    const fileName = `${Date.now()}_${req.file.originalname.replace(/\s+/g, "_")}`;
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { error: storageError } = await supabase.storage
+      .from("Documents")
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+
+    if (storageError) throw storageError;
+
+    // Insert record into Postgres
+    const { data, error: insertError } = await supabase
+      .from("documents")
+      .insert([
+        {
+          user_id: userId,
+          type,
+          file_url: filePath,
+          status: "pending",
+        },
+      ])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    res.json({ success: true, document: data });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-//Admin changes the document status
-router.put('/document/:id/status', async (req, res) => {
-  const {status} = req.body
-  if(!['verified', 'rejected'].includes(status)){
-    return res.status(400).json({error: 'invalid status'})
-  }
-  const updatedStatus = await Document.findByIdAndUpdate(req.params.id, {status}, {new: true})
-  res.json(updatedStatus)
-})
-
-//user fetches document by filename. for filter
-router.get('/my-documents', async (req, res) => {
-  const { fileName } = req.query
-  const query = fileName ? { fileName } : {}
-  const docs = await Document.find(query)
-  res.json(docs)
-})
-
-export default router;
-

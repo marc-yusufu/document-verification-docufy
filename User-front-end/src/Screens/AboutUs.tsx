@@ -1,10 +1,12 @@
 import React from "react";
+import Header from "../components/Header";
 
 const AboutUs = () => {
   return (
     <div className="font-sans text-[#1A1A1A] bg-white">
+      <Header />
       {/* Hero-like banner */}
-      <section className="bg-blue-500 text-white py-20 px-6 md:px-12 rounded-br-[50px] max-w-7xl mx-auto">
+      <section className="bg-blue-500 text-white py-20 px-6 md:px-12 rounded-br-[50px] max-w-7xl mx-auto pt-40">
         <h1 className="text-5xl font-bold mb-6">About Us</h1>
         <p className="text-xl leading-relaxed max-w-3xl">
           Bug Slayers, a dedicated group of third-year students, are using tech to solve real-world problems. Our latest project, built with Boxfusion – South Africa’s leading public sector software vendor – aims to revolutionize how citizens interact with government services.
