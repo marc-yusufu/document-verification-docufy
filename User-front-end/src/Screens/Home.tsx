@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MainHeader from "../components/mainHeader";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../Authentication/supabaseconfig"; // make sure you have this
+import { supabase } from "../Authentication/supabaseconfig";
 import { v4 as uuidv4 } from "uuid";
 
 type DocumentStatus = "Verified" | "Checking" | "Not verified" | "Fraud detected";
@@ -26,34 +26,41 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [isTracking, setIsTracking] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Fetch documents from Supabase
   useEffect(() => {
     const fetchDocs = async () => {
-      // 1. Get metadata from table
+      setLoading(true);
       const { data, error } = await supabase
         .from("documents")
-        .select("document_id, type, file_url, status");
+        .select("document_id, type, file_url, status")
+        .order("submitted_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching documents:", error);
+        setLoading(false);
         return;
       }
 
-      // 2. Generate signed URLs for each file
       const withUrls = await Promise.all(
         data.map(async (doc) => {
-          const { data: urlData } = await supabase
+          const { data: urlData, error: urlError } = await supabase
             .storage
-            .from("documents")
-            .createSignedUrl(doc.file_url, 60 * 60); // 1 hour expiry
+            .from("documents") // must match bucket name exactly
+            .createSignedUrl(doc.file_url, 60 * 60);
+
+          if (urlError) {
+            console.error("Signed URL error:", urlError.message);
+          }
 
           return { ...doc, signed_url: urlData?.signedUrl || "" };
         })
       );
 
       setDocuments(withUrls as any);
+      setLoading(false);
     };
 
     fetchDocs();
@@ -93,18 +100,18 @@ export default function Home() {
 
       {/* Search & Upload */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center border border-gray-300 rounded-full px-4 py-2 w-full max-w-md bg-white">
+        <div className="flex items-center border border-gray-300 rounded-full px-4 py-2 w-full max-w-md bg-white shadow-sm">
           <img src="/IconPac/search (2).png" alt="Search" className="w-4 h-4" />
           <input
             type="text"
             placeholder="Search documents..."
-            className="ml-2 flex-1 outline-none"
+            className="ml-2 flex-1 outline-none text-sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition shadow"
           onClick={handleUploadClick}
         >
           Upload
@@ -114,40 +121,87 @@ export default function Home() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Document Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[500px] pr-2 flex-1">
-          {filteredDocs.map((doc) => (
-            <div
-              key={doc.document_id}
-              className="bg-white border border-gray-300 rounded-xl p-4 min-w-[200px] flex flex-col items-center"
-            >
-              <div className="text-5xl">📄</div>
-              <div className="text-sm text-center mt-2 font-medium">{doc.type}</div>
-              <div className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status].color}`}>
-                <img src={statusStyles[doc.status].icon} alt={doc.status} className="w-4 h-4" />
-                {doc.status}
-              </div>
-              <div className="flex mt-3 gap-2">
-                <a
-                  href={doc.signed_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-600 text-white text-xs px-3 py-1 rounded"
-                >
-                  <img src="/IconPac/download (1).png" alt="Download" className="w-3 h-3 inline-block mr-1" />
-                  Download
-                </a>
-                <button className="text-xs px-2 py-1 rounded border border-gray-400">
-                  <img src="/IconPac/share.png" alt="Share" className="w-4 h-4" />
-                </button>
-              </div>
+          {loading ? (
+            <div className="col-span-full text-center text-gray-500 py-10">
+              Loading documents...
             </div>
-          ))}
+          ) : filteredDocs.length === 0 ? (
+            <div className="col-span-full text-center text-gray-500 py-10">
+              No documents found.
+            </div>
+          ) : (
+            filteredDocs.map((doc) => (
+              <div
+                key={doc.document_id}
+                className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center shadow-sm hover:shadow-md transition"
+              >
+                {/* Thumbnail or Icon */}
+                {doc.file_url.endsWith(".png") ||
+                  doc.file_url.endsWith(".jpg") ||
+                  doc.file_url.endsWith(".jpeg") ? (
+                  <img
+                    src={doc.signed_url}
+                    alt={doc.type}
+                    className="w-20 h-20 object-cover rounded-lg mb-2"
+                  />
+                ) : (
+                  <div className="text-5xl">📄</div>
+                )}
+
+                {/* Document type */}
+                <div className="text-sm text-center mt-2 font-medium text-gray-800">
+                  {doc.type}
+                </div>
+
+                {/* Status */}
+                <div
+                  className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status].color}`}
+                >
+                  <img
+                    src={statusStyles[doc.status].icon}
+                    alt={doc.status}
+                    className="w-4 h-4"
+                  />
+                  {doc.status}
+                </div>
+
+                {/* Actions */}
+                <div className="flex mt-3 gap-2">
+                  <a
+                    href={doc.signed_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center bg-blue-600 text-white text-xs px-3 py-1 rounded shadow hover:bg-blue-700 transition"
+                  >
+                    <img
+                      src="/IconPac/download (1).png"
+                      alt="Download"
+                      className="w-3 h-3 inline-block mr-1"
+                    />
+                    Download
+                  </a>
+                  <button className="flex items-center text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 transition">
+                    <img
+                      src="/IconPac/share.png"
+                      alt="Share"
+                      className="w-4 h-4"
+                    />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Progress Tracker */}
         {checkingDoc && (
-          <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 w-full h-36 max-w-sm">
-            <h3 className="text-blue-900 font-semibold mb-2">Tracking Document</h3>
-            <div className="text-sm mb-2 text-blue-900 font-medium">{checkingDoc.type}</div>
+          <div className="bg-blue-50 border border-blue-300 rounded-2xl p-5 w-full h-40 max-w-sm shadow-sm">
+            <h3 className="text-blue-900 font-semibold mb-2">
+              Tracking Document
+            </h3>
+            <div className="text-sm mb-2 text-blue-900 font-medium">
+              {checkingDoc.type}
+            </div>
 
             <div className="w-full bg-blue-100 h-3 rounded-full overflow-hidden mb-1">
               <div

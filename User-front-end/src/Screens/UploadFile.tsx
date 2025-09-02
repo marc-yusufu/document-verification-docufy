@@ -69,48 +69,51 @@ export default function DocumentUpload() {
         return pdf.output("blob") as Blob;
     };
 
-
     const uploadToSupabase = async (pdfBlob: Blob) => {
         if (!file) return;
 
         const user = (await supabase.auth.getUser()).data.user;
         if (!user) throw new Error("Not authenticated");
 
-        // Sanitize filename (remove spaces, special chars)
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        // Clean filename
+        const baseName = file.name.replace(/\.[^/.]+$/, "");
+        const safeName = baseName.replace(/[^a-zA-Z0-9._-]/g, "_");
         const fileName = `${Date.now()}_${safeName}.pdf`;
         const filePath = `${user.id}/${fileName}`;
 
-        // Upload file to Supabase Storage
-        const { error: storageError } = await supabase.storage
-            .from("Documents")
+        const { data: uploadData, error: storageError } = await supabase.storage
+            .from("documents")
             .upload(filePath, pdfBlob, { contentType: "application/pdf" });
 
         if (storageError) throw storageError;
 
-        // Generate signed URL (valid for 7 days)
+        // tiny wait for object to be available
+        await new Promise(res => setTimeout(res, 500));
+
         const { data: signedData, error: signedError } = await supabase.storage
-            .from("Documents")
-            .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+            .from("documents")
+            .createSignedUrl(uploadData.path, 60 * 60 * 24 * 7);
 
         if (signedError) throw signedError;
 
-        // Insert metadata into Postgres table
+        // Insert metadata into Postgres
         const { error: insertError } = await supabase.from("documents").insert([
             {
                 user_id: user.id,
                 type: selectedType,
-                file_url: filePath, // store exact storage path
+                file_url: uploadData.path, // store path, not full bucket path
                 status: "pending",
                 submitted_at: new Date().toISOString(),
             },
         ]);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            console.error("Insert error:", insertError);
+            throw insertError;
+        }
 
         return signedData.signedUrl;
     };
-
 
     const handleSubmit = async () => {
         setError(null);
@@ -146,12 +149,13 @@ export default function DocumentUpload() {
             .limit(5);
 
         if (!error && data) {
-            // Create signed URLs for each doc
             const signedDocs = await Promise.all(
                 data.map(async (doc) => {
                     const { data: signed, error: signErr } = await supabase.storage
-                        .from("Documents")
-                        .createSignedUrl(doc.file_url, 60 * 60 * 24 * 7); // 7 days
+                        .from("documents") // ✅ lowercase bucket name
+                        .createSignedUrl(doc.file_url, 60 * 60 * 24 * 7);
+
+                    if (signErr) console.error("Signed URL error:", doc.file_url, signErr);
 
                     return {
                         ...doc,
@@ -174,7 +178,9 @@ export default function DocumentUpload() {
                         <div
                             key={type}
                             onClick={() => setSelectedType(type)}
-                            className={`cursor-pointer p-4 border rounded-lg text-center ${selectedType === type ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                            className={`cursor-pointer p-4 border rounded-lg text-center ${selectedType === type
+                                ? "border-blue-500 bg-blue-50"
+                                : "border-gray-300"
                                 }`}
                         >
                             {type}
