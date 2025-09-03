@@ -1,4 +1,4 @@
-import express from "express";
+/*import express from "express";
 import multer from "multer";
 import { supabase } from "../config/supabaseClient.js";
 
@@ -50,4 +50,4 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
   }
-});
+});*/

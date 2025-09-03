@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import MainHeader from "../components/mainHeader";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../Authentication/supabaseconfig";
-import { v4 as uuidv4 } from "uuid";
 
-type DocumentStatus = "Verified" | "Checking" | "Not verified" | "Fraud detected";
+type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected";
 
 interface Document {
   document_id: string;
@@ -14,9 +13,11 @@ interface Document {
   signed_url?: string;
 }
 
+const BUCKET_ID = "userDocuments"; // 👈 must match Supabase bucket
+
 const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
   "Verified": { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
-  "Checking": { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
+  "Pending": { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
   "Not verified": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
   "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
@@ -33,9 +34,10 @@ export default function Home() {
   useEffect(() => {
     const fetchDocs = async () => {
       setLoading(true);
+
       const { data, error } = await supabase
         .from("documents")
-        .select("document_id, type, file_url, status")
+        .select("document_id, type, file_url, status, submitted_at")
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -44,15 +46,15 @@ export default function Home() {
         return;
       }
 
+      // Sign each file_url from storage
       const withUrls = await Promise.all(
-        data.map(async (doc) => {
-          const { data: urlData, error: urlError } = await supabase
-            .storage
-            .from("documents") // must match bucket name exactly
-            .createSignedUrl(doc.file_url, 60 * 60);
+        (data ?? []).map(async (doc) => {
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from(BUCKET_ID)
+            .createSignedUrl(doc.file_url, 60 * 60); // 1-hour expiry
 
           if (urlError) {
-            console.error("Signed URL error:", urlError.message);
+            console.error("Signed URL error:", doc.file_url, urlError.message);
           }
 
           return { ...doc, signed_url: urlData?.signedUrl || "" };
@@ -70,10 +72,10 @@ export default function Home() {
     doc.type.toLowerCase().includes(query.toLowerCase())
   );
 
-  const checkingDoc = documents.find((doc) => doc.status === "Checking");
+  const pendingDoc = documents.find((doc) => doc.status === "Pending");
 
   useEffect(() => {
-    if (!checkingDoc || !isTracking) return;
+    if (!pendingDoc || !isTracking) return;
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -83,7 +85,7 @@ export default function Home() {
     }, 800);
 
     return () => clearInterval(interval);
-  }, [checkingDoc, isTracking]);
+  }, [pendingDoc, isTracking]);
 
   const handleUploadClick = () => {
     navigate("/upload");
@@ -136,9 +138,7 @@ export default function Home() {
                 className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center shadow-sm hover:shadow-md transition"
               >
                 {/* Thumbnail or Icon */}
-                {doc.file_url.endsWith(".png") ||
-                  doc.file_url.endsWith(".jpg") ||
-                  doc.file_url.endsWith(".jpeg") ? (
+                {/\.(png|jpe?g)$/i.test(doc.file_url) ? (
                   <img
                     src={doc.signed_url}
                     alt={doc.type}
@@ -155,10 +155,11 @@ export default function Home() {
 
                 {/* Status */}
                 <div
-                  className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status].color}`}
+                  className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status]?.color || "text-gray-500"
+                    }`}
                 >
                   <img
-                    src={statusStyles[doc.status].icon}
+                    src={statusStyles[doc.status]?.icon || "/IconPac/question.png"}
                     alt={doc.status}
                     className="w-4 h-4"
                   />
@@ -194,13 +195,13 @@ export default function Home() {
         </div>
 
         {/* Progress Tracker */}
-        {checkingDoc && (
+        {pendingDoc && (
           <div className="bg-blue-50 border border-blue-300 rounded-2xl p-5 w-full h-40 max-w-sm shadow-sm">
             <h3 className="text-blue-900 font-semibold mb-2">
               Tracking Document
             </h3>
             <div className="text-sm mb-2 text-blue-900 font-medium">
-              {checkingDoc.type}
+              {pendingDoc.type}
             </div>
 
             <div className="w-full bg-blue-100 h-3 rounded-full overflow-hidden mb-1">

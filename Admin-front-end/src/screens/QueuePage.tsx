@@ -2,54 +2,49 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../Authentication/supabaseconfig";
 
-interface Document{
-  _id: string
-  fileName: string
-  fileType: string
-  status: string
-  uploadedAt: string
+interface Document {
+  id: string;
+  fileName: string;
+  fileType: string;
+  status: string;
+  uploadedAt: string;
+  userName?: string;
+  branch?: string;
+  storagePath: string; // 👈 key in Supabase Storage
 }
 
 export default function QueuePage() {
   const navigate = useNavigate();
-
   const [docs, setDocs] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  //list all document in the queue
+  // fetch only pending documents
   useEffect(() => {
-    async function getAllDocs(){
-        try{
-        const res = await fetch(`http://localhost:5000/documents?status=pending`)
-        const docs = await res.json()
-        console.log('Document list: ', docs) //for console while debugging
-        setDocs(docs);
-      }catch(err){
-        console.error("Error while fetching documents: ", err);
+    async function getPendingDocs() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("status", "pending")
+        .order("uploadedAt", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching documents:", error);
+      } else {
+        setDocs(data || []);
       }
+      setLoading(false);
     }
-    getAllDocs();
+    getPendingDocs();
   }, []);
 
-  //change document status
-  async function updateStatus(id: string, status: 'verified' | 'rejected') {
-    const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    })
-
-    const updatedStatus = await res.json()
-    console.log('Updated Document:', updatedStatus)
-    return updatedStatus;
-  }
-
-
-  const tableData = [
-    { id: 15, name: "ProofOfRes.pdf", user: "Sine Hokwana", branch: "Brixton", date: "30 July 2025, 09:13AM", status: "Awaiting Review" },
-    { id: 16, name: "Mosa's ID", user: "Mosa Lichaba", branch: "Rosebank", date: "30 July 2025, 09:16AM", status: "Awaiting Review" },
-    { id: 17, name: "ProofOfRes.pdf", user: "Mosa Lichaba", branch: "Brixton", date: "30 July 2025, 09:13AM", status: "Awaiting Review" },
-  ];
+  // generate public URL for viewing
+  const getFileUrl = (path: string) => {
+    const { data } = supabase.storage.from("documents").getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh" },
@@ -59,7 +54,7 @@ export default function QueuePage() {
     th: { background: "#2563eb", color: "#fff", textAlign: "left", padding: "0.75rem" },
     td: { padding: "0.75rem", borderBottom: "1px solid #eee" },
     viewBtn: { background: "#e5e7eb", border: "none", padding: "0.4rem 0.8rem", borderRadius: "6px", cursor: "pointer" },
-    statusPending: { color: "#6b7280" },
+    statusPending: { color: "#ef4444", fontWeight: "bold" },
   };
 
   return (
@@ -68,36 +63,54 @@ export default function QueuePage() {
       <div style={styles.main}>
         <TopPanel />
         <div style={styles.content}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>#</th>
-                <th style={styles.th}>Doc Name</th>
-                <th style={styles.th}>User</th>
-                <th style={styles.th}>Branch</th>
-                <th style={styles.th}>Date & Time</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {docs.map((doc) => (
-                <tr key={doc._id}>
-                  <td style={styles.td}>{doc._id}</td>
-                  <td style={styles.td}>{doc.fileName}</td>
-                  <td style={styles.td}>{}</td>
-                  <td style={styles.td}>{}</td>
-                  <td style={styles.td}>
-                    {new Date(doc.uploadedAt).toLocaleDateString()}, {new Date(doc.uploadedAt).toLocaleTimeString()}
-                  </td>
-                  <td style={styles.td}><span style={{ ...styles.statusPending, color: 'red' }}>{doc.status}</span></td>
-                  <td style={styles.td}>
-                    <button style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc._id}`)}>View</button>
-                  </td>
+          {loading ? (
+            <p>Loading pending documents...</p>
+          ) : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>#</th>
+                  <th style={styles.th}>Doc Name</th>
+                  <th style={styles.th}>User</th>
+                  <th style={styles.th}>Branch</th>
+                  <th style={styles.th}>Date & Time</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {docs.map((doc, idx) => (
+                  <tr key={doc.id}>
+                    <td style={styles.td}>{idx + 1}</td>
+                    <td style={styles.td}>{doc.fileName}</td>
+                    <td style={styles.td}>{doc.userName || "N/A"}</td>
+                    <td style={styles.td}>{doc.branch || "N/A"}</td>
+                    <td style={styles.td}>
+                      {new Date(doc.uploadedAt).toLocaleDateString()}{" "}
+                      {new Date(doc.uploadedAt).toLocaleTimeString()}
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.statusPending}>{doc.status}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => window.open(getFileUrl(doc.storagePath), "_blank")}
+                      >
+                        View
+                      </button>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/queueView/${doc.id}`)}
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
