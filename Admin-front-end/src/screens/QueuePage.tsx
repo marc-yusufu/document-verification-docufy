@@ -1,50 +1,50 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../Authentication/supabaseconfig";
 
 interface Document {
-  id: string;
-  fileName: string;
-  fileType: string;
+  document_id: string;
+  type: string;
+  file_url: string;
   status: string;
-  uploadedAt: string;
-  userName?: string;
-  branch?: string;
-  storagePath: string; // 👈 key in Supabase Storage
+  submitted_at: string;
+  signed_url?: string;
 }
 
 export default function QueuePage() {
   const navigate = useNavigate();
   const [docs, setDocs] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // fetch only pending documents
   useEffect(() => {
-    async function getPendingDocs() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("status", "pending")
-        .order("uploadedAt", { ascending: false });
+    async function getAllDocs() {
+      try {
+        const { data, error } = await supabase
+          .from("documents")
+          .select("document_id, type, file_url, status, submitted_at")
+          .eq("status", "pending")
+          .order("submitted_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching documents:", error);
-      } else {
-        setDocs(data || []);
+        if (error) throw error;
+
+        const withUrls = await Promise.all(
+          data.map(async (doc) => {
+            const { data: signed } = await supabase.storage
+              .from("userDocuments")
+              .createSignedUrl(doc.file_url, 60 * 60);
+            return { ...doc, signed_url: signed?.signedUrl || "" };
+          })
+        );
+
+        setDocs(withUrls);
+      } catch (err) {
+        console.error("Error fetching documents: ", err);
       }
-      setLoading(false);
     }
-    getPendingDocs();
-  }, []);
 
-  // generate public URL for viewing
-  const getFileUrl = (path: string) => {
-    const { data } = supabase.storage.from("documents").getPublicUrl(path);
-    return data.publicUrl;
-  };
+    getAllDocs();
+  }, []);
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh" },
@@ -54,7 +54,7 @@ export default function QueuePage() {
     th: { background: "#2563eb", color: "#fff", textAlign: "left", padding: "0.75rem" },
     td: { padding: "0.75rem", borderBottom: "1px solid #eee" },
     viewBtn: { background: "#e5e7eb", border: "none", padding: "0.4rem 0.8rem", borderRadius: "6px", cursor: "pointer" },
-    statusPending: { color: "#ef4444", fontWeight: "bold" },
+    statusPending: { color: "#6b7280" },
   };
 
   return (
@@ -63,54 +63,40 @@ export default function QueuePage() {
       <div style={styles.main}>
         <TopPanel />
         <div style={styles.content}>
-          {loading ? (
-            <p>Loading pending documents...</p>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>#</th>
-                  <th style={styles.th}>Doc Name</th>
-                  <th style={styles.th}>User</th>
-                  <th style={styles.th}>Branch</th>
-                  <th style={styles.th}>Date & Time</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Action</th>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>#</th>
+                <th style={styles.th}>Doc Type</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Submitted</th>
+                <th style={styles.th}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {docs.map((doc, index) => (
+                <tr key={doc.document_id}>
+                  <td style={styles.td}>{index + 1}</td>
+                  <td style={styles.td}>{doc.type}</td>
+                  <td style={styles.td}>
+                    <span style={{ ...styles.statusPending, color: "red" }}>{doc.status}</span>
+                  </td>
+                  <td style={styles.td}>
+                    {new Date(doc.submitted_at).toLocaleDateString()}{" "}
+                    {new Date(doc.submitted_at).toLocaleTimeString()}
+                  </td>
+                  <td style={styles.td}>
+                    <button
+                      style={styles.viewBtn}
+                      onClick={() => navigate(`/queueView/${doc.document_id}`)}
+                    >
+                      View
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {docs.map((doc, idx) => (
-                  <tr key={doc.id}>
-                    <td style={styles.td}>{idx + 1}</td>
-                    <td style={styles.td}>{doc.fileName}</td>
-                    <td style={styles.td}>{doc.userName || "N/A"}</td>
-                    <td style={styles.td}>{doc.branch || "N/A"}</td>
-                    <td style={styles.td}>
-                      {new Date(doc.uploadedAt).toLocaleDateString()}{" "}
-                      {new Date(doc.uploadedAt).toLocaleTimeString()}
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.statusPending}>{doc.status}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => window.open(getFileUrl(doc.storagePath), "_blank")}
-                      >
-                        View
-                      </button>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => navigate(`/queueView/${doc.id}`)}
-                      >
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

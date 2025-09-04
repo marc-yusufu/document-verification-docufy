@@ -100,11 +100,15 @@ export default function DocumentUpload() {
         console.log("Uploaded:", uploadData);
 
         // 5. Save metadata in the `documents` table
+        const isImage = file.type.startsWith("image/");
+        const docType = isImage ? "image" : "document";
+
         const { error: insertError } = await supabase.from("documents").insert([
             {
                 user_id: user.id,
                 type: selectedType,
-                file_url: filePath, // store the path (NOT signed URL)
+                file_url: filePath,
+                doc_type: docType, // ✅ new field
                 status: "pending",
                 submitted_at: new Date().toISOString(),
             },
