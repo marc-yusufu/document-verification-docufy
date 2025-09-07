@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import Document from "./models/Document.js";
+import supabase from "./superBaseConfig/supabase.js";
 import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -60,6 +61,8 @@ const getFileUrl = (req, filePath) => {
 
 // Upload route
 app.post("/upload", upload.single("file"), async (req, res) => {
+
+  //MongoDB
   try {
     const newDocument = await Document.create({
       fileName: req.file.originalname,
@@ -77,9 +80,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+
 });
 
-// // Fetch alll documents
+// // Fetch alll documents 
 // app.get('/documents', async (req, res) => {
 //   try{
 //     const docs = await Document.find().sort({uploadedAt: -1});
@@ -95,21 +99,30 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 //   }
 // })
 
+
+
 // Fetch documents with optional status filtering
 app.get('/documents', async (req, res) => {
+
+  /* supabase */
   try {
-    let filter = {};
+    let query = supabase.from("documents").select("*").order("submitted_at", {ascending: false});
+
 
     // Example: /documents?status=approved,rejected
     if (req.query.status) {
       const statuses = req.query.status.split(",");
-      filter.status = { $in: statuses };
+      query = query.in("status", statuses)
     }
 
-    const docs = await Document.find(filter).sort({ uploadedAt: -1 });
+    const {data: docs, error} = await query;
+    console.log("Docs from Supabase:", docs);
+    console.log("Supabase error:", error);
+
+    if(error) throw error;
 
     const docsWithUrls = docs.map(doc => ({
-      ...doc.toObject(),
+      ...doc,
       fileUrl: getFileUrl(req, doc.filePath)
     }));
 
@@ -118,6 +131,9 @@ app.get('/documents', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
+
 
 // Fetch document by id
 app.get('/documents/:id', async (req, res) => {

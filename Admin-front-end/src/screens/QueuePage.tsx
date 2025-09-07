@@ -15,6 +15,7 @@ export default function QueuePage() {
   const navigate = useNavigate();
 
   const [docs, setDocs] = useState<Document[]>([]);
+  const [pendingDocs, setPendingDocs] = useState<Document[]>([]);
 
   //list all document in the queue
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function QueuePage() {
         console.error("Error while fetching documents: ", err);
       }
     }
+
     getAllDocs();
   }, []);
 
@@ -81,12 +83,10 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
-              {docs.map((doc) => (
-                <tr key={doc._id}>
-                  <td style={styles.td}>{doc._id}</td>
-                  <td style={styles.td}>{doc.fileName}</td>
-                  <td style={styles.td}>{}</td>
-                  <td style={styles.td}>{}</td>
+              {docs.map((doc, index) => (
+                <tr key={doc.document_id}>
+                  <td style={styles.td}>{index + 1}</td>
+                  <td style={styles.td}>{doc.type}</td>
                   <td style={styles.td}>
                     {new Date(doc.uploadedAt).toLocaleDateString()}, {new Date(doc.uploadedAt).toLocaleTimeString()}
                   </td>
