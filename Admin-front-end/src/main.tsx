@@ -14,9 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Theme>
-        <AppNav />
+        <App />
       </Theme>
-      
+
     </BrowserRouter>
   </React.StrictMode>
 );

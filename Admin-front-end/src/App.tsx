@@ -4,17 +4,26 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import "@radix-ui/themes/styles.css";
 
-
 // Authentication
 import WorkerLogin from "./Authentication/WorkerLogin";
+import WorkerSignUpScreen from "./Authentication/WorkerSignin";
+import ForgotPassword from "./Authentication/ForgotPassword";
+import ResetPassword from "./Authentication/ResertPassword";
 
 // Pages
 import DashboardPage from "./screens/DashboardPage";
 import QueuePage from "./screens/QueuePage";
 import QueueViewPage from "./screens/QueueViewPage";
-//import DocumentReviewPage from "./screens/DocumentReviewPage";
 import SettingsPage from "./screens/SettingsPage";
 import Layout from "./Layout";
+
+// Private Route Component
+import { Navigate, Outlet } from "react-router-dom";
+
+const PrivateRoute = () => {
+  const workerId = localStorage.getItem("workerId");
+  return workerId ? <Outlet /> : <Navigate to="/login" replace />;
+};
 
 const App = () => {
   const location = useLocation();
@@ -25,9 +34,6 @@ const App = () => {
   useEffect(() => {
     AOS.init({ duration: 1000 });
   }, []);
-
-  const hiddenRoutes = ["/login"];
-  const hideHeaderFooter = hiddenRoutes.includes(location.pathname);
 
   return (
     <div className="font-sans">
@@ -43,19 +49,25 @@ const App = () => {
       )}
 
       <Routes>
-        {/* Login page without sidebar */}
+        {/* Public Routes */}
         <Route path="/login" element={<WorkerLogin />} />
+        <Route path="/register" element={<WorkerSignUpScreen />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Pages with sidebar */}
-        <Route element={<Layout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/queue" element={<QueuePage />} />
-          <Route path="/queueView/:id" element={<QueueViewPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+
+        {/* Private Routes */}
+        <Route element={<PrivateRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/queue" element={<QueuePage />} />
+            <Route path="/queueView/:id" element={<QueueViewPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
 
         {/* Default redirect */}
-        <Route path="*" element={<WorkerLogin />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>
   );

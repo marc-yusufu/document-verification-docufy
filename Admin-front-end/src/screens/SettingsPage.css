@@ -1,0 +1,126 @@
+/* SettingsPage.css */
+
+.settings-container {
+  flex: 1;
+  padding: 25px 40px;
+  background-color: #f3f3f3;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
+
+/* Page Header */
+.settings-container h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: #222;
+}
+
+/* Section */
+.settings-container section {
+  background-color: white;
+  padding: 20px 25px;
+  margin-bottom: 25px;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.05);
+}
+
+.settings-container section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2e7bf6;
+}
+
+/* General Text */
+.settings-container p {
+  font-size: 14px;
+  color: #555;
+  margin: 4px 0;
+}
+
+/* Buttons */
+.settings-container button {
+  background-color: #2e7bf6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.settings-container button:hover {
+  background-color: #1d5ec9;
+  transform: translateY(-2px);
+}
+
+/* Toggles (checkboxes styled like switches) */
+.settings-container label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: #333;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.settings-container input[type="checkbox"] {
+  appearance: none;
+  width: 42px;
+  height: 22px;
+  border-radius: 20px;
+  background-color: #ccc;
+  position: relative;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.settings-container input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  background-color: white;
+  transition: transform 0.3s;
+}
+
+.settings-container input[type="checkbox"]:checked {
+  background-color: #2e7bf6;
+}
+
+.settings-container input[type="checkbox"]:checked::after {
+  transform: translateX(20px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 15px;
+  }
+
+  .settings-container h2 {
+    font-size: 22px;
+  }
+
+  .settings-container section {
+    padding: 15px 18px;
+  }
+
+  .settings-container section h3 {
+    font-size: 18px;
+  }
+}

@@ -16,6 +16,7 @@ interface Document {
 export default function QueuePage() {
   const navigate = useNavigate();
   const [docs, setDocs] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getAllDocs() {
@@ -40,6 +41,8 @@ export default function QueuePage() {
         setDocs(withUrls);
       } catch (err) {
         console.error("Error fetching documents: ", err);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -52,7 +55,7 @@ export default function QueuePage() {
     content: { padding: "1rem", flex: 1, overflow: "auto" },
     table: { width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: "8px", overflow: "hidden" },
     th: { background: "#2563eb", color: "#fff", textAlign: "left", padding: "0.75rem" },
-    td: { padding: "0.75rem", borderBottom: "1px solid #eee" },
+    td: { padding: "0.75rem", borderBottom: "1px solid #eee", textAlign: "center" },
     viewBtn: { background: "#e5e7eb", border: "none", padding: "0.4rem 0.8rem", borderRadius: "6px", cursor: "pointer" },
     statusPending: { color: "#6b7280" },
   };
@@ -74,27 +77,41 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
-              {docs.map((doc, index) => (
-                <tr key={doc.document_id}>
-                  <td style={styles.td}>{index + 1}</td>
-                  <td style={styles.td}>{doc.type}</td>
-                  <td style={styles.td}>
-                    <span style={{ ...styles.statusPending, color: "red" }}>{doc.status}</span>
-                  </td>
-                  <td style={styles.td}>
-                    {new Date(doc.submitted_at).toLocaleDateString()}{" "}
-                    {new Date(doc.submitted_at).toLocaleTimeString()}
-                  </td>
-                  <td style={styles.td}>
-                    <button
-                      style={styles.viewBtn}
-                      onClick={() => navigate(`/queueView/${doc.document_id}`)}
-                    >
-                      View
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} style={styles.td}>
+                    ⏳ Loading documents...
                   </td>
                 </tr>
-              ))}
+              ) : docs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={styles.td}>
+                    📂 No pending documents found.
+                  </td>
+                </tr>
+              ) : (
+                docs.map((doc, index) => (
+                  <tr key={doc.document_id}>
+                    <td style={styles.td}>{index + 1}</td>
+                    <td style={styles.td}>{doc.type}</td>
+                    <td style={styles.td}>
+                      <span style={{ ...styles.statusPending, color: "red" }}>{doc.status}</span>
+                    </td>
+                    <td style={styles.td}>
+                      {new Date(doc.submitted_at).toLocaleDateString()}{" "}
+                      {new Date(doc.submitted_at).toLocaleTimeString()}
+                    </td>
+                    <td style={styles.td}>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/queueView/${doc.document_id}`)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
