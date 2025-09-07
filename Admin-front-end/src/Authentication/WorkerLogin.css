@@ -115,3 +115,125 @@
     background: linear-gradient(to bottom right, #60a5fa, #1e40af);
   }
 }
+
+/* TwoFA Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #1f2937; /* dark gray */
+  padding: 2.5rem;
+  border-radius: 1rem;
+  text-align: center;
+  color: #f9fafb;
+  width: 400px;
+  max-width: 90%;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #f9fafb;
+}
+
+.modal-content h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-content p {
+  color: #d1d5db;
+  margin-bottom: 1.5rem;
+}
+
+.code-input-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.code-input-box {
+  width: 50px;
+  height: 60px;
+  font-size: 1.5rem;
+  text-align: center;
+  border: 2px solid #2563eb;
+  border-radius: 0.5rem;
+  background-color: #374151;
+  color: #f9fafb;
+  outline: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.code-input-box:focus {
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+.verify-button,
+.cancel-button {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.verify-button {
+  background-color: #2563eb;
+  color: white;
+}
+
+.verify-button:hover {
+  background-color: #1e40af;
+}
+
+.cancel-button {
+  background-color: #6b7280;
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #4b5563;
+}
+
+.resend-text {
+  font-size: 0.875rem;
+  color: #d1d5db;
+}
+
+.resend-link {
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.resend-link:hover {
+  color: #1e40af;
+}
+

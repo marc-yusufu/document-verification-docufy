@@ -19,8 +19,14 @@ export default function Sidebar() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("worker_id"); // ✅ fixed key
+        // Clear worker session
+        localStorage.removeItem("workerId");
         localStorage.removeItem("role");
+
+        // Optionally, you can clear all localStorage if needed
+        // localStorage.clear();
+
+        // Redirect to login page
         navigate("/login");
     };
 

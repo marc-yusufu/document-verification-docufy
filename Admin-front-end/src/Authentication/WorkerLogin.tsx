@@ -1,22 +1,31 @@
-// WorkerLogin.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import logo from '../assets/images/logopng.png';
 import './WorkerLogin.css';
+import TwoFAModal from './TwoFAModal';
 
 const supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL,
     import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const sendOtpEmail = async (email: string, otp: string) => {
+    console.log(`Send OTP ${otp} to email: ${email}`);
+    // integrate actual email sending logic here
+};
+
 function WorkerLogin() {
     const [form, setForm] = useState({ workerId: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [is2FAModalOpen, set2FAModalOpen] = useState(false);
+    const [currentWorker, setCurrentWorker] = useState<any>(null);
+
     const navigate = useNavigate();
 
-    // Redirect if already logged in
     useEffect(() => {
         const workerId = localStorage.getItem('workerId');
         if (workerId) navigate('/dashboard');
@@ -35,7 +44,6 @@ function WorkerLogin() {
 
         setLoading(true);
         try {
-            // Step 1: Find worker by Worker ID
             const { data: worker, error: workerError } = await supabase
                 .from('workers')
                 .select('email, worker_id_2, role')
@@ -49,7 +57,6 @@ function WorkerLogin() {
                 return;
             }
 
-            // Step 2: Log in via Supabase Auth using worker's email
             const { error: signInError } = await supabase.auth.signInWithPassword({
                 email: worker.email,
                 password: form.password,
@@ -61,16 +68,57 @@ function WorkerLogin() {
                 return;
             }
 
-            // Step 3: Save session + redirect
-            localStorage.setItem('workerId', worker.worker_id_2);
-            localStorage.setItem('role', worker.role);
-            navigate('/dashboard');
+            // Open 2FA modal
+            setCurrentWorker(worker);
+            set2FAModalOpen(true);
+
+            const otp = generateOTP();
+            await supabase.from('worker_otps').insert({
+                worker_id: worker.worker_id_2,
+                otp,
+                expires_at: new Date(new Date().getTime() + 5 * 60000),
+            });
+
+            await sendOtpEmail(worker.email, otp);
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleVerify2FA = async (code: string) => {
+        if (!currentWorker) return;
+
+        const { data } = await supabase
+            .from('worker_otps')
+            .select('*')
+            .eq('worker_id', currentWorker.worker_id_2)
+            .eq('otp', code)
+            .maybeSingle();
+
+        if (!data || new Date(data.expires_at) < new Date()) {
+            alert('Invalid or expired OTP');
+            return;
+        }
+
+        localStorage.setItem('workerId', currentWorker.worker_id_2);
+        localStorage.setItem('role', currentWorker.role);
+        set2FAModalOpen(false);
+        navigate('/dashboard');
+    };
+
+    const handleResend2FA = async () => {
+        if (!currentWorker) return;
+        const otp = generateOTP();
+        await supabase.from('worker_otps').insert({
+            worker_id: currentWorker.worker_id_2,
+            otp,
+            expires_at: new Date(new Date().getTime() + 5 * 60000),
+        });
+        await sendOtpEmail(currentWorker.email, otp);
+        alert('OTP resent!');
     };
 
     return (
@@ -118,6 +166,13 @@ function WorkerLogin() {
                 </button>
             </div>
             <div className="worker-login-right"></div>
+
+            <TwoFAModal
+                isOpen={is2FAModalOpen}
+                onClose={() => set2FAModalOpen(false)}
+                onVerify={handleVerify2FA}
+                onResend={handleResend2FA}
+            />
         </div>
     );
 }
