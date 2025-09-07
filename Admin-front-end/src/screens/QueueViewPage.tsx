@@ -27,6 +27,7 @@ export default function QueueViewPage() {
   const navigate = useNavigate();
 
   const {id} = useParams();
+  console.log("Params:", id);
   const [displayDoc, setDisplayDoc] = useState<Docs | null>();
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function QueueViewPage() {
     return(
       <div style={{ padding: "2rem" }}>
         <p>Loading...</p>
+        <p>Connecting to server</p>
       </div>
       
     ) 

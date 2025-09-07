@@ -47,17 +47,17 @@ export default function QueuePage() {
   }, []);
 
   //change document status
-  // async function updateStatus(id: string, status: 'verified' | 'rejected') {
-  //   const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
-  //     method: 'PUT',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({ status })
-  //   })
+  async function updateStatus(id: string, status: 'verified' | 'rejected') {
+    const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    })
 
-  //   const updatedStatus = await res.json()
-  //   console.log('Updated Document:', updatedStatus)
-  //   return updatedStatus;
-  // }
+    const updatedStatus = await res.json()
+    console.log('Updated Document:', updatedStatus)
+    return updatedStatus;
+  }
 
 
   const tableData = [

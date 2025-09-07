@@ -171,8 +171,8 @@ app.put('/documents/:id/status', async (req, res) => {
     const { data: updatedDoc, error } = await supabase
       .from("documents")
       .update({ status })
-      .eq("id", req.params.id)
-      .select()
+      .eq("document_id", req.params.id)
+      .select("*")
       .single();
 
     if (error) {
