@@ -4,11 +4,11 @@ import TopPanel from "../components/TopPanel";
 import { useNavigate } from "react-router-dom";
 
 interface Document{
-  _id: string
+  id: string
   fileName: string
-  fileType: string
+  type: string
   status: string
-  uploadedAt: string
+  submitted_at: string
 }
 
 export default function QueuePage() {
@@ -21,7 +21,7 @@ export default function QueuePage() {
   useEffect(() => {
     async function getAllDocs(){
         try{
-        const res = await fetch(`http://localhost:5000/documents?status=pending`)
+        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setDocs(docs);
@@ -36,28 +36,28 @@ export default function QueuePage() {
         const res = await fetch(`http://localhost:5000/documents/?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
-        setPendingDocs(docs);
+        setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
       }catch(err){
         console.error("Error while fetching documents: ", err);
       }
     }
 
-    //getAllDocs();
+    getAllDocs();
     getAllDocs2();
   }, []);
 
   //change document status
-  async function updateStatus(id: string, status: 'verified' | 'rejected') {
-    const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    })
+  // async function updateStatus(id: string, status: 'verified' | 'rejected') {
+  //   const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
+  //     method: 'PUT',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ status })
+  //   })
 
-    const updatedStatus = await res.json()
-    console.log('Updated Document:', updatedStatus)
-    return updatedStatus;
-  }
+  //   const updatedStatus = await res.json()
+  //   console.log('Updated Document:', updatedStatus)
+  //   return updatedStatus;
+  // }
 
 
   const tableData = [
@@ -77,6 +77,8 @@ export default function QueuePage() {
     statusPending: { color: "#6b7280" },
   };
 
+  console.log("Rendering docs:", pendingDocs); //does the state even receive anything from the api?
+
   return (
     <div style={styles.container}>
       <Sidebar />
@@ -87,25 +89,23 @@ export default function QueuePage() {
             <thead>
               <tr>
                 <th style={styles.th}>#</th>
-                <th style={styles.th}>Doc Name</th>
-                <th style={styles.th}>User</th>
-                <th style={styles.th}>Branch</th>
-                <th style={styles.th}>Date & Time</th>
+                <th style={styles.th}>Doc Type</th>
                 <th style={styles.th}>Status</th>
+                <th style={styles.th}>Submitted</th>
                 <th style={styles.th}>Action</th>
               </tr>
             </thead>
             <tbody>
               {pendingDocs.map((doc, index) => (
-                <tr key={doc.document_id}>
+                <tr key={doc.id}>
                   <td style={styles.td}>{index + 1}</td>
                   <td style={styles.td}>{doc.type}</td>
-                  <td style={styles.td}>
-                    {new Date(doc.uploadedAt).toLocaleDateString()}, {new Date(doc.uploadedAt).toLocaleTimeString()}
-                  </td>
                   <td style={styles.td}><span style={{ ...styles.statusPending, color: 'red' }}>{doc.status}</span></td>
                   <td style={styles.td}>
-                    <button style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc._id}`)}>View</button>
+                    {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
+                  </td>
+                  <td style={styles.td}>
+                    <button style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}`)}>View</button>
                   </td>
                 </tr>
               ))}
