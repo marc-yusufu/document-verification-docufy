@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     MdDashboard,
     MdListAlt,
@@ -11,6 +11,7 @@ import { useState } from "react";
 
 export default function Sidebar() {
     const navigate = useNavigate();
+    const location = useLocation(); // ✅ get current path
     const [hovered, setHovered] = useState<string | null>(null);
 
     const handleNavigation = (path: string) => {
@@ -18,17 +19,10 @@ export default function Sidebar() {
     };
 
     const handleLogout = () => {
-        // Clear worker session
-        localStorage.removeItem("workerId");
+        localStorage.removeItem("worker_id"); // ✅ fixed key
         localStorage.removeItem("role");
-
-        // Optionally, you can clear all localStorage if needed
-        // localStorage.clear();
-
-        // Redirect to login page
         navigate("/login");
     };
-
 
     const sidebarStyle: React.CSSProperties = {
         display: "flex",
@@ -46,6 +40,7 @@ export default function Sidebar() {
         fontSize: "1.25rem",
         fontWeight: "bold",
         marginBottom: "24px",
+        cursor: "pointer",
     };
 
     const navStyle: React.CSSProperties = {
@@ -74,6 +69,12 @@ export default function Sidebar() {
         color: "#fff",
     };
 
+    const activeStyle: React.CSSProperties = {
+        backgroundColor: "#3376F3",
+        color: "#fff",
+        fontWeight: "bold",
+    };
+
     const logoutButtonStyle: React.CSSProperties = {
         ...buttonBase,
         backgroundColor: "#dc2626",
@@ -88,25 +89,31 @@ export default function Sidebar() {
         label: string;
         icon: React.ReactNode;
         path: string;
-    }) => (
-        <button
-            onClick={() => handleNavigation(path)}
-            onMouseEnter={() => setHovered(label)}
-            onMouseLeave={() => setHovered(null)}
-            style={{
-                ...buttonBase,
-                ...(hovered === label ? hoverStyle : {}),
-            }}
-        >
-            <span style={{ fontSize: "1.25rem" }}>{icon}</span>
-            <span>{label}</span>
-        </button>
-    );
+    }) => {
+        const isActive = location.pathname.startsWith(path); // ✅ active if route matches
+        return (
+            <button
+                onClick={() => handleNavigation(path)}
+                onMouseEnter={() => setHovered(label)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                    ...buttonBase,
+                    ...(isActive ? activeStyle : {}),
+                    ...(hovered === label ? hoverStyle : {}),
+                }}
+            >
+                <span style={{ fontSize: "1.25rem" }}>{icon}</span>
+                <span>{label}</span>
+            </button>
+        );
+    };
 
     return (
         <aside style={sidebarStyle}>
             <div>
-                <div style={logoStyle}>Logo</div>
+                <div style={logoStyle} onClick={() => navigate("/dashboard")}>
+                    Logo
+                </div>
                 <nav style={navStyle}>
                     <NavButton label="Dashboard" icon={<MdDashboard />} path="/dashboard" />
                     <NavButton label="Queue" icon={<MdListAlt />} path="/queue" />
@@ -116,7 +123,8 @@ export default function Sidebar() {
 
             <nav style={navStyle}>
                 <NavButton label="Settings" icon={<MdSettings />} path="/settings" />
-                <NavButton label="Help Centre" icon={<MdHelpOutline />} path="/help" />
+                {/* Uncomment when route is ready */}
+                {/* <NavButton label="Help Centre" icon={<MdHelpOutline />} path="/help" /> */}
 
                 <button onClick={handleLogout} style={logoutButtonStyle}>
                     <span style={{ fontSize: "1.25rem" }}>
