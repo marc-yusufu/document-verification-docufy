@@ -30,7 +30,20 @@ export default function QueuePage() {
       }
     }
 
-    getAllDocs();
+    //api call to the backend to fetch documents with "pending" status
+    async function getAllDocs2(){
+      try{
+        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+        const docs = await res.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setPendingDocs(docs);
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
+      }
+    }
+
+    //getAllDocs();
+    getAllDocs2();
   }, []);
 
   //change document status
@@ -83,7 +96,7 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
-              {docs.map((doc, index) => (
+              {pendingDocs.map((doc, index) => (
                 <tr key={doc.document_id}>
                   <td style={styles.td}>{index + 1}</td>
                   <td style={styles.td}>{doc.type}</td>
