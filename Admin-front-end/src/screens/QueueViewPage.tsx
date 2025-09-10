@@ -56,7 +56,6 @@ export default function QueueViewPage() {
 
 
   const {id, file_url} = useParams()
-  const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
   
   ///fetching document by making api call to the backend
   useEffect(() => {
@@ -87,7 +86,6 @@ export default function QueueViewPage() {
   
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
-  const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
     fetchDoc();
