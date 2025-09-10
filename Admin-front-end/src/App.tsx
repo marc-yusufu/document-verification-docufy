@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import AOS from "aos";
+import AOS from "aos"; 
 import "aos/dist/aos.css";
 import "@radix-ui/themes/styles.css";
 
@@ -56,14 +56,22 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
 
 
+
+        {/* Pages with sidebar */}
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/queue" element={<QueuePage />} />
+          <Route path="/queueView/:id/:file_url" element={<QueueViewPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+
         {/* Private Routes */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/queue" element={<QueuePage />} />
-            <Route path="/queueView/:id" element={<QueueViewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
+
         </Route>
 
         {/* Default redirect */}

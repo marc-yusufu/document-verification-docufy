@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import multer from "multer";
 import Document from "./models/Document.js";
+import supabase from "./superBaseConfig/supabase.js";
 import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -60,6 +61,8 @@ const getFileUrl = (req, filePath) => {
 
 // Upload route
 app.post("/upload", upload.single("file"), async (req, res) => {
+
+  //MongoDB
   try {
     const newDocument = await Document.create({
       fileName: req.file.originalname,
@@ -77,9 +80,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+
 });
 
-// // Fetch alll documents
+// // Fetch alll documents 
 // app.get('/documents', async (req, res) => {
 //   try{
 //     const docs = await Document.find().sort({uploadedAt: -1});
@@ -95,22 +99,31 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 //   }
 // })
 
+
+
 // Fetch documents with optional status filtering
 app.get('/documents', async (req, res) => {
+
+  /* supabase */
   try {
-    let filter = {};
+    let query = supabase.from("documents").select("*").order("submitted_at", {ascending: false});
+
 
     // Example: /documents?status=approved,rejected
     if (req.query.status) {
       const statuses = req.query.status.split(",");
-      filter.status = { $in: statuses };
+      query = query.in("status", statuses)
     }
 
-    const docs = await Document.find(filter).sort({ uploadedAt: -1 });
+    const {data: docs, error} = await query;
+    console.log("Docs from Supabase:", docs);
+    console.log("Supabase error:", error);
+
+    if(error) throw error;
 
     const docsWithUrls = docs.map(doc => ({
-      ...doc.toObject(),
-      fileUrl: getFileUrl(req, doc.filePath)
+      ...doc,
+      fileUrl: getFileUrl(req, doc.filePath || "")
     }));
 
     res.json(docsWithUrls);
@@ -119,16 +132,34 @@ app.get('/documents', async (req, res) => {
   }
 });
 
-// Fetch document by id
-app.get('/documents/:id', async (req, res) => {
+
+
+
+// Fetch document by file_url
+app.get('/documents/:id/:file_url', async (req, res) => {
+
+  const fileUrlParams = req.params.file_url;
+
+  console.log("Backend received file_url:", fileUrlParams);
   try {
-    const doc = await Document.findById(req.params.id)
-    if(!doc) return res.status(404).json({ error: "Document not found"})
+    const { data: doc, error } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("file_url", fileUrlParams)
+      .single();
+    
+    console.log("Query result: " , {data: doc, error: error})
 
-    const fileUrl = getFileUrl(req, doc.filePath);
-    res.json({ ...doc.toObject(), fileUrl });
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(404).json({ error: "Document not found" });
+    }
 
+    const fileUrl = doc.filepath ? getFileUrl(req, doc.filepath) : null;
+
+    res.json({ ...doc, fileUrl });
   } catch (err) {
+    console.error("Server error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -137,18 +168,28 @@ app.get('/documents/:id', async (req, res) => {
 //Admin Update status of documents
 app.put('/documents/:id/status', async (req, res) => {
   try {
-    const { status } = req.body
+    const { status } = req.body;
+
     if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' })
+      return res.status(400).json({ error: 'Invalid status' });
     }
-    const updatedDoc = await Document.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    )
-    res.json(updatedDoc)
+
+    const { data: updatedDoc, error } = await supabase
+      .from("documents")
+      .update({ status })
+      .eq("document_id", req.params.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(updatedDoc);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message })
+    console.error("Server error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 })
 

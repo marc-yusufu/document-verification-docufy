@@ -2,23 +2,61 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
+
+import { useNavigate } from "react-router-dom";
+import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
-interface Document {
+interface Document{
+  id: string
   document_id: string;
-  type: string;
-  file_url: string;
-  status: string;
-  submitted_at: string;
+  file_url: string
+  fileName: string
+  type: string
+  status: string
+  submitted_at: string
   signed_url?: string;
+
 }
 
 export default function QueuePage() {
   const navigate = useNavigate();
   const [docs, setDocs] = useState<Document[]>([]);
+
+  const [pendingDocs, setPendingDocs] = useState<Document[]>([]);
+
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
+
+    async function getAllDocuments(){
+        try{
+        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+        const docs = await res.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setDocs(docs);
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
+      }
+    }
+
+    //api call to the backend to fetch documents with "pending" status
+    async function getAllDocs2(){
+      try{
+        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+        const docs = await res.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
+      }
+    }
+
+    getAllDocs();
+    getAllDocs2();
+  }, []);
+
     async function getAllDocs() {
       try {
         const { data, error } = await supabase
@@ -26,6 +64,7 @@ export default function QueuePage() {
           .select("document_id, type, file_url, status, submitted_at")
           .eq("status", "pending")
           .order("submitted_at", { ascending: false });
+
 
         if (error) throw error;
 
@@ -60,6 +99,8 @@ export default function QueuePage() {
     statusPending: { color: "#6b7280" },
   };
 
+  console.log("Rendering docs:", pendingDocs); //does the state even receive anything from the api?
+
   return (
     <div style={styles.container}>
       <Sidebar />
@@ -77,6 +118,20 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
+
+              {pendingDocs.map((doc, index) => (
+                <tr key={doc.id}>
+                  <td style={styles.td}>{index + 1}</td>
+                  <td style={styles.td}>{doc.type}</td>
+                  <td style={styles.td}><span style={{ ...styles.statusPending, color: 'red' }}>{doc.status}</span></td>
+                  <td style={styles.td}>
+                    {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
+                  </td>
+                  <td style={styles.td} className="flex">
+                    <button 
+                      className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
+                      style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}/${encodeURIComponent(doc.file_url)}`)}>View<MdVisibility/></button>
+
               {loading ? (
                 <tr>
                   <td colSpan={5} style={styles.td}>
@@ -87,6 +142,7 @@ export default function QueuePage() {
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
+
                   </td>
                 </tr>
               ) : (

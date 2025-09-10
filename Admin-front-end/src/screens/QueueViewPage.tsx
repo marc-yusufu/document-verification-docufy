@@ -6,27 +6,95 @@ import RightDetailsPanel from "../components/RightDetailsPanel";
 import { supabase } from "../Authentication/supabaseconfig";
 
 interface Docs {
-  fileName: string;
-  fileType: string;
-  filePath: string;
-  fileUrl: string;
-  status: string;
-  uploadedAt: string;
+
+  fileName: string
+  fileType: string
+  filePath: string
+  fileUrl: string
+  status: string
+  uploadedAt: Date
+
+  //supabase
+  document_id: string
+  type: string
+  file_url: string
+  submitted_at: Date
   submittedBy: string;
   docType: string;
+
 }
+
+        /*
+  {
+    document_id: '54e179b8-8f5e-4975-ae43-2dcdf0d0d507',
+    user_id: 'fa64554c-1462-4964-8ef4-d929086b9f3e',
+    type: 'Proof of Identity',
+    file_url: 'fa64554c-1462-4964-8ef4-d929086b9f3e/1756932029384_edit.pdf',
+    status: 'pending',
+    department_assigned: null,
+    verified_by: null,
+    rejected_reason: null,
+    signed_file_url: null,
+    submitted_at: '2025-09-03T20:40:30.466+00:00',
+    verified_at: null,
+    branch_assigned: null,
+    doc_type: null
+  }
+        */
+
+type Props = {
+  doc: Document;
+  onStatusChange: (updatedDoc: Document) => void; // parent refresh
+};
+
 
 export default function QueueViewPage() {
   const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
   const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
   const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
   const navigate = useNavigate();
+
+
+  const {id, file_url} = useParams()
+  const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
+  
+  ///fetching document by making api call to the backend
+  useEffect(() => {
+    if (!file_url) return; // Don't fetch if id is missing
+
+      const viewDocs = async () => {
+        try {
+          const res = await fetch(`http://localhost:5000/documents/${id}/${file_url}`);
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          const doc = await res.json();
+          setDisplayDoc(doc);
+        } catch (err) {
+          console.error("Error while trying to display the document: ", err);
+        }
+      }
+    viewDocs();
+  }, [file_url]);
+
+  if (!displayDoc){
+    return(
+      <div style={{ padding: "2rem" }}>
+        <p>Loading...</p>
+        <p>Connecting to server</p>
+      </div>
+      
+    ) 
+  } 
+  
+  const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
+
   const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
     fetchDoc();
   }, [id]);
-
+  
+  
+  ///fetching directly from the frontend
   async function fetchDoc() {
     setLoadingDoc(true);
     try {
@@ -80,6 +148,7 @@ export default function QueueViewPage() {
       setLoadingDoc(false);
     }
   }
+
 
   const updateStatus = async (status: "approved" | "rejected") => {
     if (!id || !displayDoc) return;
