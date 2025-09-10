@@ -29,7 +29,7 @@ export default function DocumentUpload() {
         const user = userData.user;
 
         const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
-        const filePath = `${user.id}/${fileName}`;
+        const filePath = `${user.id}/${fileName}`; //edit format to make it a single string
 
         const { error: storageError } = await supabase.storage
             .from(BUCKET_ID)
