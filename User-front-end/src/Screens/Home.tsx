@@ -12,6 +12,7 @@ interface Document {
   file_url: string; // path in storage
   status: DocumentStatus;
   signed_url?: string;
+  submitted_at: Date;
 }
 
 const BUCKET_ID = "userDocuments"; // 👈 must match Supabase bucket
@@ -24,6 +25,7 @@ const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
 };
 
 export default function Home() {
+  const [docs, setDocs] = useState<Document[]>([])
   const [query, setQuery] = useState("");
   const [progress, setProgress] = useState(0);
   const [isTracking, setIsTracking] = useState(false);
@@ -38,7 +40,7 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("documents")
-        .select("document_id, type, file_url, status, submitted_at")
+        .select("document_id, file_name, type, file_url, status, submitted_at")
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -47,12 +49,21 @@ export default function Home() {
         return;
       }
 
+      if(!data){
+        setDocs([]);
+        setDocuments([])
+        setLoading(false);
+        return;
+      }
+
+      setDocs(data);
+
       // Sign each file_url from storage
       const withUrls = await Promise.all(
-        (data ?? []).map(async (doc) => {
+        data.map(async (doc) => {
           const { data: urlData, error: urlError } = await supabase.storage
             .from(BUCKET_ID)
-            .createSignedUrl(doc.file_url, 60 * 60); // 1-hour expiry
+            .createSignedUrl(doc.file_url, 30 * 24 * 60 * 60); // 30-days expiry
 
           if (urlError) {
             console.error("Signed URL error:", doc.file_url, urlError.message);
@@ -151,7 +162,7 @@ export default function Home() {
 
                 {/* Document type */}
                 <div className="text-sm text-center mt-2 font-medium text-gray-800">
-                  {doc.type}
+                  {doc.file_name}
                 </div>
 
                 {/* Status */}
