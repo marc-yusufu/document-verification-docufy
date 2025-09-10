@@ -33,7 +33,7 @@ export default function DocumentUpload() {
 
             const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
             const fname = `${file?.name}`; //to add file name to the database
-            const filePath = `${user.id}-${fileName}`; //edit format to make it a single string
+            const filePath = `${user.id}/${fileName}`; //edit format to make it a single string
 
             const { error: storageError } = await supabase.storage
                 .from(BUCKET_ID)
@@ -47,15 +47,16 @@ export default function DocumentUpload() {
             const { error: insertError } = await supabase.from("documents").insert([
                 {
                     user_id: user.id,
-                    file_name: fileName,
+                    file_name: fname,
                     type: selectedType,
                     file_url: filePath,
                     doc_type: "document",
                     status: "pending",
                     submitted_at: new Date().toISOString(),
                 },
+                
             ]);
-
+            window.alert("File uploaded")
             if (insertError) throw insertError;
         }catch(err){
             console.log("Error uploading document to supabase: ", err)
@@ -105,8 +106,10 @@ export default function DocumentUpload() {
             return;
         }
         try{
-            
-            uploadToSupabase(file);
+
+            setLoading(true);
+
+            await uploadToSupabase(file);
 
             const formData = new FormData();
             formData.append("file", `${file}`);
@@ -126,7 +129,7 @@ export default function DocumentUpload() {
             console.log("Error occured. File upload failed: ", err);
             window.alert("Error occured. File upload failed")
         }finally{
-            //setUploading(false);
+            setLoading(false);
         }
     }
 
@@ -208,7 +211,7 @@ export default function DocumentUpload() {
             <div className="flex w-full justify-center mt-10">
                 <button
                 type="submit"
-                
+                onClick={handleSubmit}
                 className="
                 w-[80%] bg-blue-600 text-white font-bold rounded-md 
                 p-2 cursor-pointer hover:bg-blue-800 transform
