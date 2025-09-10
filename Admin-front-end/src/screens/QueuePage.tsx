@@ -52,40 +52,10 @@ export default function QueuePage() {
       }
     }
 
-    getAllDocs();
+    getAllDocuments();
     getAllDocs2();
   }, []);
 
-    async function getAllDocs() {
-      try {
-        const { data, error } = await supabase
-          .from("documents")
-          .select("document_id, type, file_url, status, submitted_at")
-          .eq("status", "pending")
-          .order("submitted_at", { ascending: false });
-
-
-        if (error) throw error;
-
-        const withUrls = await Promise.all(
-          data.map(async (doc) => {
-            const { data: signed } = await supabase.storage
-              .from("userDocuments")
-              .createSignedUrl(doc.file_url, 60 * 60);
-            return { ...doc, signed_url: signed?.signedUrl || "" };
-          })
-        );
-
-        setDocs(withUrls);
-      } catch (err) {
-        console.error("Error fetching documents: ", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    getAllDocs();
-  }, []);
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh" },
@@ -118,50 +88,36 @@ export default function QueuePage() {
             </thead>
             <tbody>
 
-              {pendingDocs.map((doc, index) => (
-                <tr key={doc.id}>
-                  <td style={styles.td}>{index + 1}</td>
-                  <td style={styles.td}>{doc.type}</td>
-                  <td style={styles.td}><span style={{ ...styles.statusPending, color: 'red' }}>{doc.status}</span></td>
-                  <td style={styles.td}>
-                    {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
-                  </td>
-                  <td style={styles.td} className="flex">
-                    <button 
-                      className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
-                      style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}/${encodeURIComponent(doc.file_url)}`)}>View<MdVisibility/></button>
-
               {loading ? (
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     ⏳ Loading documents...
                   </td>
                 </tr>
-              ) : docs.length === 0 ? (
+              ) : pendingDocs.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
-
                   </td>
                 </tr>
               ) : (
-                docs.map((doc, index) => (
-                  <tr key={doc.document_id}>
+                pendingDocs.map((doc, index) => (
+                  <tr key={doc.id}>
                     <td style={styles.td}>{index + 1}</td>
                     <td style={styles.td}>{doc.type}</td>
                     <td style={styles.td}>
-                      <span style={{ ...styles.statusPending, color: "red" }}>{doc.status}</span>
+                      <span style={{ ...styles.statusPending, color: 'red' }}>{doc.status}</span>
                     </td>
                     <td style={styles.td}>
-                      {new Date(doc.submitted_at).toLocaleDateString()}{" "}
-                      {new Date(doc.submitted_at).toLocaleTimeString()}
+                      {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
                     </td>
-                    <td style={styles.td}>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => navigate(`/queueView/${doc.document_id}`)}
+                    <td style={styles.td} className="flex">
+                      <button 
+                        className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
+                        style={styles.viewBtn} 
+                        onClick={() => navigate(`/queueView/${encodeURIComponent(doc.file_url)}`)}
                       >
-                        View
+                        View<MdVisibility/>
                       </button>
                     </td>
                   </tr>
@@ -172,5 +128,5 @@ export default function QueuePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

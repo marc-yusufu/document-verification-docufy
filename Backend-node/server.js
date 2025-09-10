@@ -136,7 +136,7 @@ app.get('/documents', async (req, res) => {
 
 
 // Fetch document by file_url
-app.get('/documents/:id/:file_url', async (req, res) => {
+app.get('/documents/:file_url', async (req, res) => {
 
   const fileUrlParams = req.params.file_url;
 
