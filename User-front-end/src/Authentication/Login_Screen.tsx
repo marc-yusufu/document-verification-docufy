@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from './firebaseconfig';
-import { isValidSouthAfricanID } from './Utilities/validateID';
+import { createClient } from '@supabase/supabase-js';
 import logo from '../assets/images/logopng.png';
-import Orb from '../components/Orb';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+);
 
 function LoginScreen() {
   const [form, setForm] = useState({ idNumber: '', password: '' });
@@ -20,8 +22,14 @@ function LoginScreen() {
   const validateForm = () => {
     const { idNumber, password } = form;
     if (!idNumber || !password) return 'Please fill in all fields.';
-    if (!/^\d{13}$/.test(idNumber)) return 'ID must be 13 digits.';
-    if (!isValidSouthAfricanID(idNumber)) return 'Invalid South African ID.';
+
+    const isID = /^\d{13}$/.test(idNumber);
+    const isPassport = /^A\d{7}$/.test(idNumber);
+
+    if (!isID && !isPassport) {
+      return 'Enter a valid SA ID (13 digits) or Passport (A followed by 7 digits).';
+    }
+
     return null;
   };
 
@@ -34,11 +42,24 @@ function LoginScreen() {
 
     setLoading(true);
     try {
-      const fakeEmail = `${form.idNumber}@example.com`;
-      await signInWithEmailAndPassword(auth, fakeEmail, form.password);
+      // Same email pattern as signup
+      const email = `user${form.idNumber}@gmail.com`;
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: form.password,
+      });
+
+      if (error) throw error;
+
+      // Save session token if needed
+      if (data.session?.access_token) {
+        localStorage.setItem('token', data.session.access_token);
+      }
+
       navigate('/home');
-    } catch {
-      setError('Login failed. Check ID and password.');
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Check your ID/Passport and password.');
     } finally {
       setLoading(false);
     }
@@ -46,7 +67,6 @@ function LoginScreen() {
 
   return (
     <div className="flex h-screen w-full font-sans overflow-hidden">
-      {/* Left Panel */}
       <div className="w-full md:w-1/2 flex flex-col justify-center px-12 py-10 bg-white z-10">
         <div className="flex justify-between items-start mb-10">
           <Link to="/">
@@ -70,7 +90,7 @@ function LoginScreen() {
 
         <input
           name="idNumber"
-          placeholder="ID Number"
+          placeholder="ID Number or Passport"
           className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
           value={form.idNumber}
           onChange={handleChange}
@@ -87,17 +107,14 @@ function LoginScreen() {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className={`w-full py-3 rounded-2xl text-white font-semibold transition ${
-            loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
+          className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </div>
 
-      {/* Right Panel */}
-      <div className="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700">
-      </div>
+      <div className="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700"></div>
     </div>
   );
 }

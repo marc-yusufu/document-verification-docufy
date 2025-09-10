@@ -1,54 +1,81 @@
 import { useState, useEffect } from "react";
 import MainHeader from "../components/mainHeader";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../Authentication/supabaseconfig";
 
-import { usePdf } from "../Context/PdfContext";
+type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected";
 
-//type DocumentStatus = "Verified" | "Checking" | "Not verified" | "Fraud detected";
+interface Document {
+  document_id: string;
+  type: string;
+  file_url: string; // path in storage
+  status: DocumentStatus;
+  signed_url?: string;
+}
 
-// interface Document {
-//   id: string;
-//   name: string;
-//   status: DocumentStatus;
-// }
+const BUCKET_ID = "userDocuments"; // 👈 must match Supabase bucket
 
-const statusStyles = { 
-  "verified":      { color: "text-green-700", icon: "/public/IconPac/shield-trust.png" },
-  "checking":      { color: "text-yellow-700", icon: "/public/IconPac/circle-dashed.png" },
-  "Not verified":   { color: "text-gray-700", icon: "/public/IconPac/cross-circle.png" },
-  "Fraud detected": { color: "text-red-700", icon: "/public/IconPac/exclamation.png" },
+const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
+  "Verified": { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
+  "Pending": { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
+  "Not verified": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
+  "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
-
-// const documents: Document[] = [
-//   { id: "1", name: "Sine’s Id.pdf", status: "Verified" },
-//   { id: "2", name: "Police affidavit.pdf", status: "Checking" },
-//   { id: "3", name: "Proof of residence.pdf", status: "Not verified" },
-//   { id: "4", name: "Bank statement.pdf", status: "Fraud detected" },
-//   { id: "5", name: "Utility Bill.pdf", status: "Verified" },
-//   { id: "6", name: "Tax Return 2023.pdf", status: "Checking" },
-//   { id: "7", name: "Employment Contract.pdf", status: "Verified" },
-//   { id: "8", name: "Vehicle Registration.pdf", status: "Not verified" },
-//   { id: "9", name: "Medical Report.pdf", status: "Fraud detected" },
-// ];
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [progress, setProgress] = useState(0);
   const [isTracking, setIsTracking] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  //context
-  const {pdfDataUrl} = usePdf();
-  const {documents}  = usePdf();
+  // Fetch documents from Supabase
+  useEffect(() => {
+    const fetchDocs = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("documents")
+        .select("document_id, type, file_url, status, submitted_at")
+        .order("submitted_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching documents:", error);
+        setLoading(false);
+        return;
+      }
+
+      // Sign each file_url from storage
+      const withUrls = await Promise.all(
+        (data ?? []).map(async (doc) => {
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from(BUCKET_ID)
+            .createSignedUrl(doc.file_url, 60 * 60); // 1-hour expiry
+
+          if (urlError) {
+            console.error("Signed URL error:", doc.file_url, urlError.message);
+          }
+
+          return { ...doc, signed_url: urlData?.signedUrl || "" };
+        })
+      );
+
+      setDocuments(withUrls as any);
+      setLoading(false);
+    };
+
+    fetchDocs();
+  }, []);
 
   const filteredDocs = documents.filter((doc) =>
-    doc.name.toLowerCase().includes(query.toLowerCase())
+    doc.type.toLowerCase().includes(query.toLowerCase())
   );
 
-  const checkingDoc = documents.find((doc) => doc.status === "checking");
+  const pendingDoc = documents.find((doc) => doc.status === "Pending");
 
   useEffect(() => {
-    if (!checkingDoc || !isTracking) return;
+    if (!pendingDoc || !isTracking) return;
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -58,21 +85,10 @@ export default function Home() {
     }, 800);
 
     return () => clearInterval(interval);
-  }, [checkingDoc, isTracking]);
+  }, [pendingDoc, isTracking]);
 
   const handleUploadClick = () => {
     navigate("/upload");
-  };
-
-  const handlePdfDownload = (pdfUrl?: string) => {
-    if (!pdfDataUrl) return;
-
-    const link = document.createElement("a");
-    link.href = pdfDataUrl;
-    link.download = "processed.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const startTracking = () => {
@@ -86,18 +102,18 @@ export default function Home() {
 
       {/* Search & Upload */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center border border-gray-300 rounded-full px-4 py-2 w-full max-w-md bg-white">
-          <img src="/public/IconPac/search (2).png" alt="Search" className="w-4 h-4" />
+        <div className="flex items-center border border-gray-300 rounded-full px-4 py-2 w-full max-w-md bg-white shadow-sm">
+          <img src="/IconPac/search (2).png" alt="Search" className="w-4 h-4" />
           <input
             type="text"
             placeholder="Search documents..."
-            className="ml-2 flex-1 outline-none"
+            className="ml-2 flex-1 outline-none text-sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition shadow"
           onClick={handleUploadClick}
         >
           Upload
@@ -107,43 +123,86 @@ export default function Home() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Document Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[500px] pr-2 flex-1">
-          {filteredDocs.length > 0 ? (
+          {loading ? (
+            <div className="col-span-full text-center text-gray-500 py-10">
+              Loading documents...
+            </div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="col-span-full text-center text-gray-500 py-10">
+              No documents found.
+            </div>
+          ) : (
             filteredDocs.map((doc) => (
               <div
-                key={doc.id}
-                className="bg-white border border-gray-300 rounded-xl p-4 min-w-[200px] flex flex-col items-center"
+                key={doc.document_id}
+                className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center shadow-sm hover:shadow-md transition"
               >
-                <div>
+                {/* Thumbnail or Icon */}
+                {/\.(png|jpe?g)$/i.test(doc.file_url) ? (
+                  <img
+                    src={doc.signed_url}
+                    alt={doc.type}
+                    className="w-20 h-20 object-cover rounded-lg mb-2"
+                  />
+                ) : (
                   <div className="text-5xl">📄</div>
-                  <div className="text-sm text-center mt-2 font-medium">{doc.name}</div>
-                  <div className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status].color}`}>
-                    <img src={statusStyles[doc.status].icon} alt={doc.status} className="w-4 h-4" />
-                    {doc.status}
-                  </div>
-                  <div className="flex mt-3 gap-2">
-                    <button 
-                      onClick={() => handlePdfDownload(doc.pdfDataUrl)}
-                      className="bg-blue-600 text-white text-xs px-3 py-1 rounded">
-                      <img src="/public/IconPac/download (1).png" alt="Download" className="w-3 h-3 inline-block mr-1" />
-                      Download
-                    </button>
-                    <button className="text-xs px-2 py-1 rounded border border-gray-400">
-                      <img src="/public/IconPac/share.png" alt="Share" className="w-4 h-4" />
-                    </button>
-                  </div>
+                )}
+
+                {/* Document type */}
+                <div className="text-sm text-center mt-2 font-medium text-gray-800">
+                  {doc.type}
+                </div>
+
+                {/* Status */}
+                <div
+                  className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status]?.color || "text-gray-500"
+                    }`}
+                >
+                  <img
+                    src={statusStyles[doc.status]?.icon || "/IconPac/question.png"}
+                    alt={doc.status}
+                    className="w-4 h-4"
+                  />
+                  {doc.status}
+                </div>
+
+                {/* Actions */}
+                <div className="flex mt-3 gap-2">
+                  <a
+                    href={doc.signed_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center bg-blue-600 text-white text-xs px-3 py-1 rounded shadow hover:bg-blue-700 transition"
+                  >
+                    <img
+                      src="/IconPac/download (1).png"
+                      alt="Download"
+                      className="w-3 h-3 inline-block mr-1"
+                    />
+                    Download
+                  </a>
+                  <button className="flex items-center text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 transition">
+                    <img
+                      src="/IconPac/share.png"
+                      alt="Share"
+                      className="w-4 h-4"
+                    />
+                  </button>
                 </div>
               </div>
             ))
-          ) : (
-            <p>No Verified Documents</p>
           )}
         </div>
 
         {/* Progress Tracker */}
-        {checkingDoc && (
-          <div className="bg-blue-50 border border-blue-300 rounded-xl p-4 w-full h-36 max-w-sm">
-            <h3 className="text-blue-900 font-semibold mb-2">Tracking Document</h3>
-            <div className="text-sm mb-2 text-blue-900 font-medium">{checkingDoc.name}</div>
+        {pendingDoc && (
+          <div className="bg-blue-50 border border-blue-300 rounded-2xl p-5 w-full h-40 max-w-sm shadow-sm">
+            <h3 className="text-blue-900 font-semibold mb-2">
+              Tracking Document
+            </h3>
+            <div className="text-sm mb-2 text-blue-900 font-medium">
+              {pendingDoc.type}
+            </div>
 
             <div className="w-full bg-blue-100 h-3 rounded-full overflow-hidden mb-1">
               <div

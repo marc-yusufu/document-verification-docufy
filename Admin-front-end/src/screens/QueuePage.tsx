@@ -1,27 +1,36 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
+
 import { useNavigate } from "react-router-dom";
 import { MdVisibility } from "react-icons/md";
+import { supabase } from "../Authentication/supabaseconfig";
 
 interface Document{
   id: string
+  document_id: string;
   file_url: string
   fileName: string
   type: string
   status: string
   submitted_at: string
+  signed_url?: string;
+
 }
 
 export default function QueuePage() {
   const navigate = useNavigate();
-
   const [docs, setDocs] = useState<Document[]>([]);
+
   const [pendingDocs, setPendingDocs] = useState<Document[]>([]);
 
-  //list all document in the queue
+  const [loading, setLoading] = useState(true);
+
+
   useEffect(() => {
-    async function getAllDocs(){
+
+    async function getAllDocuments(){
         try{
         const res = await fetch(`http://localhost:5000/documents/?status=pending`)
         const docs = await res.json()
@@ -48,25 +57,36 @@ export default function QueuePage() {
     getAllDocs2();
   }, []);
 
-  //change document status
-  async function updateStatus(id: string, status: 'verified' | 'rejected') {
-    const res = await fetch(`http://localhost:5000/documents/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    })
-
-    const updatedStatus = await res.json()
-    console.log('Updated Document:', updatedStatus)
-    return updatedStatus;
-  }
+    async function getAllDocs() {
+      try {
+        const { data, error } = await supabase
+          .from("documents")
+          .select("document_id, type, file_url, status, submitted_at")
+          .eq("status", "pending")
+          .order("submitted_at", { ascending: false });
 
 
-  const tableData = [
-    { id: 15, name: "ProofOfRes.pdf", user: "Sine Hokwana", branch: "Brixton", date: "30 July 2025, 09:13AM", status: "Awaiting Review" },
-    { id: 16, name: "Mosa's ID", user: "Mosa Lichaba", branch: "Rosebank", date: "30 July 2025, 09:16AM", status: "Awaiting Review" },
-    { id: 17, name: "ProofOfRes.pdf", user: "Mosa Lichaba", branch: "Brixton", date: "30 July 2025, 09:13AM", status: "Awaiting Review" },
-  ];
+        if (error) throw error;
+
+        const withUrls = await Promise.all(
+          data.map(async (doc) => {
+            const { data: signed } = await supabase.storage
+              .from("userDocuments")
+              .createSignedUrl(doc.file_url, 60 * 60);
+            return { ...doc, signed_url: signed?.signedUrl || "" };
+          })
+        );
+
+        setDocs(withUrls);
+      } catch (err) {
+        console.error("Error fetching documents: ", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getAllDocs();
+  }, []);
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh" },
@@ -74,7 +94,7 @@ export default function QueuePage() {
     content: { padding: "1rem", flex: 1, overflow: "auto" },
     table: { width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: "8px", overflow: "hidden" },
     th: { background: "#2563eb", color: "#fff", textAlign: "left", padding: "0.75rem" },
-    td: { padding: "0.75rem", borderBottom: "1px solid #eee" },
+    td: { padding: "0.75rem", borderBottom: "1px solid #eee", textAlign: "center" },
     viewBtn: { background: "#e5e7eb", border: "none", padding: "0.4rem 0.8rem", borderRadius: "6px", cursor: "pointer" },
     statusPending: { color: "#6b7280" },
   };
@@ -98,6 +118,7 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
+
               {pendingDocs.map((doc, index) => (
                 <tr key={doc.id}>
                   <td style={styles.td}>{index + 1}</td>
@@ -110,9 +131,43 @@ export default function QueuePage() {
                     <button 
                       className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                       style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}/${encodeURIComponent(doc.file_url)}`)}>View<MdVisibility/></button>
+
+              {loading ? (
+                <tr>
+                  <td colSpan={5} style={styles.td}>
+                    ⏳ Loading documents...
                   </td>
                 </tr>
-              ))}
+              ) : docs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={styles.td}>
+                    📂 No pending documents found.
+
+                  </td>
+                </tr>
+              ) : (
+                docs.map((doc, index) => (
+                  <tr key={doc.document_id}>
+                    <td style={styles.td}>{index + 1}</td>
+                    <td style={styles.td}>{doc.type}</td>
+                    <td style={styles.td}>
+                      <span style={{ ...styles.statusPending, color: "red" }}>{doc.status}</span>
+                    </td>
+                    <td style={styles.td}>
+                      {new Date(doc.submitted_at).toLocaleDateString()}{" "}
+                      {new Date(doc.submitted_at).toLocaleTimeString()}
+                    </td>
+                    <td style={styles.td}>
+                      <button
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/queueView/${doc.document_id}`)}
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

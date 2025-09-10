@@ -1,11 +1,11 @@
-import SplitText from "./splitText";
+import SplitText from "../components/splitText";
 import RotatingText from "./rotatingText";
 
 const Hero = () => {
   return (
     <section
       id="hero"
-      className="relative min-h-[90vh] bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 md:px-16 py-20 flex flex-col md:flex-row justify-between items-center gap-10"
+      className="relative min-h-[99vh] bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 md:px-16 py-20 flex flex-col md:flex-row justify-between items-center gap-10"
     >
       {/* Left Content */}
       <div className="max-w-xl space-y-6 text-left" data-aos="fade-right">

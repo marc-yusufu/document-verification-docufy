@@ -1,0 +1,118 @@
+/* WorkerSignUpScreen.css */
+
+.worker-signup-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  font-family: sans-serif;
+}
+
+.worker-signup-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem;
+  width: 100%;
+  max-width: 50%;
+  background: #fff;
+}
+
+.worker-signup-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.worker-signup-logo {
+  height: 40px;
+  object-fit: contain;
+}
+
+.worker-signup-links {
+  display: flex;
+  gap: 1.5rem;
+  color: #2563eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.worker-signup-links a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.worker-signup-links a:hover {
+  text-decoration: underline;
+}
+
+.worker-signup-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.worker-signup-subtext {
+  margin-bottom: 1.5rem;
+  color: #374151;
+}
+
+.worker-signup-error {
+  color: #dc2626;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.worker-signup-input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #e5e7eb;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.worker-signup-input:focus {
+  border: 2px solid #2563eb;
+}
+
+.worker-signup-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.worker-signup-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  color: white;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+  background: #2563eb;
+}
+
+.worker-signup-btn:hover {
+  background: #1e40af;
+}
+
+.worker-signup-btn:disabled {
+  background: #60a5fa;
+  cursor: not-allowed;
+}
+
+.worker-signup-right {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .worker-signup-right {
+    display: block;
+    width: 50%;
+    background: #2563eb;
+  }
+}

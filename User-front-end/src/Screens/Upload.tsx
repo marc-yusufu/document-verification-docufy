@@ -11,7 +11,7 @@ export default function Upload() {
   const [result, setResult] = useState<string | null>(null);
 
   const handleBrowseClick = () => { //No change
-    fileInputRef.current?.click(); 
+    fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,9 +82,8 @@ export default function Upload() {
             {/* Proof of Identity */}
             <div
               onClick={() => handleTypeSelect("identity")}
-              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${
-                typeOfFile === "identity" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
-              }`}
+              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${typeOfFile === "identity" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
+                }`}
             >
               <h2 className="text-[20px] font-medium mb-2">Proof of Identity</h2>
               <ul className="list-disc pl-5 text-sm">
@@ -98,9 +97,8 @@ export default function Upload() {
             {/* Proof of Residence */}
             <div
               onClick={() => handleTypeSelect("residence")}
-              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${
-                typeOfFile === "residence" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
-              }`}
+              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${typeOfFile === "residence" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
+                }`}
             >
               <h2 className="text-[20px] font-medium mb-2">Proof of Residence</h2>
               <ul className="list-disc pl-5 text-sm">
@@ -118,9 +116,8 @@ export default function Upload() {
             {/* Additional Documents */}
             <div
               onClick={() => handleTypeSelect("additional")}
-              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${
-                typeOfFile === "additional" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
-              }`}
+              className={`cursor-pointer border w-[330px] h-[350px] p-4 rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 ${typeOfFile === "additional" ? "bg-blue-100 border-black" : "bg-gray-100 border-gray-300"
+                }`}
             >
               <h2 className="text-[20px] font-medium mb-2">Additional Documents</h2>
               <ul className="list-disc pl-5 text-sm">
@@ -141,9 +138,8 @@ export default function Upload() {
           <button
             type="submit"
             disabled={uploading}
-            className={`w-full bg-black text-white py-2 px-4 rounded-lg font-medium ${
-              uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-900"
-            }`}
+            className={`w-full bg-black text-white py-2 px-4 rounded-lg font-medium ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-900"
+              }`}
           >
             {uploading ? "Uploading..." : "Submit"}
           </button>

@@ -1,3 +1,4 @@
+// mongoDbConfig/db.js
 //connecting to mongoDB database using mongoose
 
 import mongoose from 'mongoose';

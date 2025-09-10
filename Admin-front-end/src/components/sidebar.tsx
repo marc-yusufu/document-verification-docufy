@@ -18,9 +18,17 @@ export default function Sidebar() {
     };
 
     const handleLogout = () => {
-        console.log("User logged out");
+        // Clear worker session
+        localStorage.removeItem("workerId");
+        localStorage.removeItem("role");
+
+        // Optionally, you can clear all localStorage if needed
+        // localStorage.clear();
+
+        // Redirect to login page
         navigate("/login");
     };
+
 
     const sidebarStyle: React.CSSProperties = {
         display: "flex",
