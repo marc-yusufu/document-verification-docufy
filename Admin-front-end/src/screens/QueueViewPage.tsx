@@ -56,10 +56,15 @@ export default function QueueViewPage() {
 
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
   const {file_url} = useParams()
   const decodedFileUrl = decodeURIComponent(file_url ?? "")
 
+=======
+  const {file_url} = useParams()
+  const decodedFileUrl = decodeURIComponent(file_url ?? "")
+>>>>>>> Stashed changes
 =======
   const {file_url} = useParams()
   const decodedFileUrl = decodeURIComponent(file_url ?? "")
@@ -95,11 +100,16 @@ export default function QueueViewPage() {
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 
   // const { id } = useParams<{ id: string }>();
 
 
+=======
+  // const { id } = useParams<{ id: string }>();
+
+>>>>>>> Stashed changes
 =======
   // const { id } = useParams<{ id: string }>();
 
