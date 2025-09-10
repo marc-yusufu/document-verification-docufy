@@ -7,6 +7,7 @@ const BUCKET_ID = "userDocuments";
 
 interface UploadedDoc {
     document_id: string;
+    file_name: string;
     type: string;
     file_url: string;
     submitted_at: string;
@@ -18,40 +19,48 @@ export default function DocumentUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [recentDocs, setRecentDocs] = useState<UploadedDoc[]>([]);
+    const [error, setError] = useState<string>("");
 
     useEffect(() => {
         fetchRecentDocs();
     }, []);
 
     const uploadToSupabase = async (pdfBlob: Blob) => {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError || !userData.user) throw new Error("Not authenticated");
-        const user = userData.user;
+        try{
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            if (userError || !userData.user) throw new Error("Not authenticated");
+            const user = userData.user;
 
-        const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
-        const filePath = `${user.id}/${fileName}`; //edit format to make it a single string
+            const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
+            const fname = `${file?.name}`; //to add file name to the database
+            const filePath = `${user.id}-${fileName}`; //edit format to make it a single string
 
-        const { error: storageError } = await supabase.storage
-            .from(BUCKET_ID)
-            .upload(filePath, pdfBlob, {
-                contentType: "application/pdf",
-                upsert: false,
-            });
+            const { error: storageError } = await supabase.storage
+                .from(BUCKET_ID)
+                .upload(filePath, pdfBlob, {
+                    contentType: "application/pdf",
+                    upsert: false,
+                });
 
-        if (storageError) throw storageError;
+            if (storageError) throw storageError;
 
-        const { error: insertError } = await supabase.from("documents").insert([
-            {
-                user_id: user.id,
-                type: selectedType,
-                file_url: filePath,
-                doc_type: "document",
-                status: "pending",
-                submitted_at: new Date().toISOString(),
-            },
-        ]);
+            const { error: insertError } = await supabase.from("documents").insert([
+                {
+                    user_id: user.id,
+                    file_name: fileName,
+                    type: selectedType,
+                    file_url: filePath,
+                    doc_type: "document",
+                    status: "pending",
+                    submitted_at: new Date().toISOString(),
+                },
+            ]);
 
-        if (insertError) throw insertError;
+            if (insertError) throw insertError;
+        }catch(err){
+            console.log("Error uploading document to supabase: ", err)
+        }
+
     };
 
     const fetchRecentDocs = async () => {
@@ -80,6 +89,46 @@ export default function DocumentUpload() {
         );
         setRecentDocs(signedDocs as any);
     };
+
+    const handleSubmit = async () =>{
+
+        if(!file && !selectedType){
+            setError("*Select a file and type above*");
+            return;
+        }
+        if(!file){
+            setError("*No file selected*");
+            return;
+        }
+        if(!selectedType){
+            setError("*Select the type above*");
+            return;
+        }
+        try{
+            
+            uploadToSupabase(file);
+
+            const formData = new FormData();
+            formData.append("file", `${file}`);
+            formData.append("typeOfFile", `${file?.type}`);
+
+            const res = await fetch("http://localhost:5000/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            console.log("server response:", data);
+            
+            return data;
+
+        }catch(err){
+            console.log("Error occured. File upload failed: ", err);
+            window.alert("Error occured. File upload failed")
+        }finally{
+            //setUploading(false);
+        }
+    }
 
     return (
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow">
@@ -121,8 +170,14 @@ export default function DocumentUpload() {
                     <label htmlFor="fileInput" className="cursor-pointer text-blue-600">
                         {file ? file.name : "Click to upload or drag and drop"}
                     </label>
+                    
                 </div>
             )}
+
+            <div className="flex w-full justify-center" >
+                <span className="text-red-400 italic">{error}</span>
+            </div>
+            
 
             <div className="mt-8">
                 <h3 className="text-lg font-semibold mb-2">Recently Uploaded</h3>
@@ -136,10 +191,11 @@ export default function DocumentUpload() {
                                     rel="noopener noreferrer"
                                     className="text-blue-600 underline"
                                 >
+                                    {doc.file_name && " "  || ""} 
                                     {doc.type}
                                 </a>
                             ) : (
-                                <span className="text-gray-500">{doc.type}</span>
+                                <span className="text-gray-500">No recently uploaded files</span>
                             )}
                             <span className="text-gray-500 text-sm ml-2">
                                 {new Date(doc.submitted_at).toLocaleString()}
@@ -147,6 +203,21 @@ export default function DocumentUpload() {
                         </li>
                     ))}
                 </ul>
+            </div>
+
+            <div className="flex w-full justify-center mt-10">
+                <button
+                type="submit"
+                
+                className="
+                w-[80%] bg-blue-600 text-white font-bold rounded-md 
+                p-2 cursor-pointer hover:bg-blue-800 transform
+                transition-transform duration-300 hover:scale-105
+                shadow-md ease-out active:scale-95 active:translate-y-0.5
+                hover:shadow-lg"
+                >
+                    Upload
+                </button>
             </div>
         </div>
     );

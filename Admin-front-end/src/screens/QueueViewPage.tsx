@@ -55,20 +55,7 @@ export default function QueueViewPage() {
   const navigate = useNavigate();
 
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-  const {file_url} = useParams()
-  const decodedFileUrl = decodeURIComponent(file_url ?? "")
-
-=======
-  const {file_url} = useParams()
-  const decodedFileUrl = decodeURIComponent(file_url ?? "")
->>>>>>> Stashed changes
-=======
-  const {file_url} = useParams()
-  const decodedFileUrl = decodeURIComponent(file_url ?? "")
->>>>>>> Stashed changes
+  const {file_url} = useParams<{file_url : string}>()
   
   ///fetching document by making api call to the backend
   useEffect(() => {
@@ -76,7 +63,7 @@ export default function QueueViewPage() {
 
       const viewDocs = async () => {
         try {
-          const res = await fetch(`http://localhost:5000/documents/${file_url}`);
+          const res = await fetch(`http://localhost:5000/documents/${fileUrl}`);
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           const doc = await res.json();
           setDisplayDoc(doc);
@@ -99,21 +86,18 @@ export default function QueueViewPage() {
   
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+
 
 
   // const { id } = useParams<{ id: string }>();
 
 
-=======
   // const { id } = useParams<{ id: string }>();
 
->>>>>>> Stashed changes
-=======
+
   // const { id } = useParams<{ id: string }>();
 
->>>>>>> Stashed changes
+
   // useEffect(() => {
   //   fetchDoc();
   // }, [id]);

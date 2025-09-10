@@ -8,6 +8,7 @@ type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected"
 interface Document {
   document_id: string;
   type: string;
+  file_name: string;
   file_url: string; // path in storage
   status: DocumentStatus;
   signed_url?: string;
