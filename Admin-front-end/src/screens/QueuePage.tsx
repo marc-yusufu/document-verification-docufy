@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
 
-import { useNavigate } from "react-router-dom";
 import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
