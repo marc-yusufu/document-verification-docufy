@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
 import { useNavigate } from "react-router-dom";
+import { MdVisibility } from "react-icons/md";
 
 interface Document{
   id: string
+  file_url: string
   fileName: string
   type: string
   status: string
@@ -104,8 +106,10 @@ export default function QueuePage() {
                   <td style={styles.td}>
                     {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
                   </td>
-                  <td style={styles.td}>
-                    <button style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}`)}>View</button>
+                  <td style={styles.td} className="flex">
+                    <button 
+                      className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
+                      style={styles.viewBtn} onClick={() => navigate(`/queueView/${doc.id}/${encodeURIComponent(doc.file_url)}`)}>View<MdVisibility/></button>
                   </td>
                 </tr>
               ))}

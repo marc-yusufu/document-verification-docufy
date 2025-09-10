@@ -12,7 +12,31 @@ interface Docs {
   status: string
   uploadedAt: Date
 
+  //supabase
+  document_id: string
+  type: string
+  file_url: string
+  submitted_at: Date
+
 }
+
+        /*
+  {
+    document_id: '54e179b8-8f5e-4975-ae43-2dcdf0d0d507',
+    user_id: 'fa64554c-1462-4964-8ef4-d929086b9f3e',
+    type: 'Proof of Identity',
+    file_url: 'fa64554c-1462-4964-8ef4-d929086b9f3e/1756932029384_edit.pdf',
+    status: 'pending',
+    department_assigned: null,
+    verified_by: null,
+    rejected_reason: null,
+    signed_file_url: null,
+    submitted_at: '2025-09-03T20:40:30.466+00:00',
+    verified_at: null,
+    branch_assigned: null,
+    doc_type: null
+  }
+        */
 
 type Props = {
   doc: Document;
@@ -26,25 +50,24 @@ export default function QueueViewPage() {
 
   const navigate = useNavigate();
 
-  const {id} = useParams();
-  console.log("Params:", id);
-  const [displayDoc, setDisplayDoc] = useState<Docs | null>();
+  const {id, file_url} = useParams()
+  const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
 
   useEffect(() => {
-    if (!id) return; // Don't fetch if id is missing
+    if (!file_url) return; // Don't fetch if id is missing
 
-    async function viewDocs() {
-      try {
-        const res = await fetch(`http://localhost:5000/documents/${id}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const doc = await res.json();
-        setDisplayDoc(doc);
-      } catch (err) {
-        console.error("Error while trying to display the document: ", err);
+      const viewDocs = async () => {
+        try {
+          const res = await fetch(`http://localhost:5000/documents/${id}/${file_url}`);
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          const doc = await res.json();
+          setDisplayDoc(doc);
+        } catch (err) {
+          console.error("Error while trying to display the document: ", err);
+        }
       }
-    }
     viewDocs();
-  }, [id]);
+  }, [file_url]);
 
   if (!displayDoc){
     return(
