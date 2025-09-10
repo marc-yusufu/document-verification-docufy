@@ -22,12 +22,28 @@ interface RecentActivity {
   created_at: string;
 }
 
+interface Docs {
+  id: string | number;
+  fileName: string
+  fileType: string
+  filePath: string
+  fileUrl: string
+  status: string
+  uploadedAt: Date
+
+}
+
 export default function DashboardPage() {
   const [activity, setActivity] = useState<RecentActivity[]>([]);
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  const [verifiedCount, setVerifiedCount] = useState<number>(0);
-  const [rejectedCount, setRejectedCount] = useState<number>(0);
+  const [pendingCount, setPendingCount] = useState([]);
+  const [verifiedCount, setVerifiedCount] = useState([]);
+  const [rejectedCount, setRejectedCount] = useState([]);
 
+  const [docs, setDocs] = useState<Docs[]>([]);
+
+
+
+  ////fetching data directly from the frontend
   useEffect(() => {
     async function fetchActivity() {
       // Fetch recent activity logs
@@ -58,10 +74,6 @@ export default function DashboardPage() {
         .from("recent_activity")
         .select("*", { count: "exact", head: true })
         .eq("status", "rejected");
-
-      setPendingCount(pending || 0);
-      setVerifiedCount(verified || 0);
-      setRejectedCount(rejected || 0);
     }
 
     fetchActivity();
@@ -83,6 +95,33 @@ export default function DashboardPage() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+
+  ///fetching data by making api call to the backend
+  useEffect(() => {
+    async function getAllDocs(){
+      try{
+        const res = await fetch(`http://localhost:5000/documents?status=approved,rejected`)
+        const countPending = await fetch(`http://localhost:5000/documents?status=pending`)
+        const countVerified = await fetch(`http://localhost:5000/documents?status=approved`)
+        const countRejected = await fetch(`http://localhost:5000/documents?status=rejected`)
+        const docs = await res.json()
+        const countDocsPending = await countPending.json()
+        const countDocsVerified = await countVerified.json()
+        const countDocsRejected = await countRejected.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setDocs(docs);
+        setPendingCount(countDocsPending.length);
+        setVerifiedCount(countDocsVerified.length);
+        setRejectedCount(countDocsRejected.length);
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
+      }
+    }
+    getAllDocs();
+  }, []);
+
+
 
   return (
     <div className="dashboard-container">

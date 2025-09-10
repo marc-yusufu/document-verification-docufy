@@ -24,7 +24,7 @@ export default function QueuePage() {
 
   const [pendingDocs, setPendingDocs] = useState<Document[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); //use for 2 to 3 second loading animation
 
 
   useEffect(() => {
@@ -88,13 +88,7 @@ export default function QueuePage() {
             </thead>
             <tbody>
 
-              {loading ? (
-                <tr>
-                  <td colSpan={5} style={styles.td}>
-                    ⏳ Loading documents...
-                  </td>
-                </tr>
-              ) : pendingDocs.length === 0 ? (
+              { docs.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
@@ -115,7 +109,7 @@ export default function QueuePage() {
                       <button 
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                         style={styles.viewBtn} 
-                        onClick={() => navigate(`/queueView/${encodeURIComponent(doc.file_url)}`)}
+                        onClick={() => navigate(`/queueView/${doc.file_url}`)}
                       >
                         View<MdVisibility/>
                       </button>
