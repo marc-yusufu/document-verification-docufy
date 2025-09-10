@@ -14,7 +14,7 @@ export default function AppNav() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/queue" element={<QueuePage />} />
-            <Route path="/queueView/:file_url" element={<QueueViewPage />} />
+            <Route path="/queueView/:code_id" element={<QueueViewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/verified" element={<VerifiedPage />} />
             <Route path="/verifiedView" element={<VerifiedViewPage />} />

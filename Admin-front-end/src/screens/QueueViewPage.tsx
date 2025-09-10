@@ -17,10 +17,11 @@ interface Docs {
   //supabase
   document_id: string
   type: string
-  //file_url: string
+  file_url: string
   submitted_at: Date
   submittedBy: string;
   docType: string;
+  code_id: string;
 
 }
 
@@ -55,15 +56,15 @@ export default function QueueViewPage() {
   const navigate = useNavigate();
 
 
-  const {file_url} = useParams<{file_url : string}>()
+  const {code_id} = useParams<{code_id : string}>()
   
   ///fetching document by making api call to the backend
   useEffect(() => {
-    if (!file_url) return; // Don't fetch if id is missing
+    if (!code_id) return; // Don't fetch if id is missing
 
       const viewDocs = async () => {
         try {
-          const res = await fetch(`http://localhost:5000/documents/${fileUrl}`);
+          const res = await fetch(`http://localhost:5000/documents/${code_id}`);
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           const doc = await res.json();
           setDisplayDoc(doc);
@@ -72,7 +73,7 @@ export default function QueueViewPage() {
         }
       }
     viewDocs();
-  }, [file_url]);
+  }, [code_id]);
 
   if (!displayDoc){
     return(
@@ -86,99 +87,6 @@ export default function QueueViewPage() {
   
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
-
-
-
-  // const { id } = useParams<{ id: string }>();
-
-
-  // const { id } = useParams<{ id: string }>();
-
-
-  // const { id } = useParams<{ id: string }>();
-
-
-  // useEffect(() => {
-  //   fetchDoc();
-  // }, [id]);
-  
-  
-  // ///fetching directly from the frontend
-  // async function fetchDoc() {
-  //   setLoadingDoc(true);
-  //   try {
-  //     const { data: doc, error: docErr } = await supabase
-  //       .from("documents")
-  //       .select("*")
-  //       .eq("document_id", id)
-  //       .single();
-  //     if (docErr) throw docErr;
-
-  //     if (!doc.user_id) throw new Error("Document has no user_id");
-
-  //     // ✅ create signed URL for this file
-  //     const { data: signed, error: signedErr } = await supabase.storage
-  //       .from("userDocuments")
-  //       .createSignedUrl(doc.file_url, 60 * 60); // 1 hour
-  //     if (signedErr) throw signedErr;
-
-  //     const { data: user, error: userErr } = await supabase
-  //       .from("users")
-  //       .select("national_id_no, passport_no")
-  //       .eq("id", doc.user_id)
-  //       .single();
-  //     if (userErr) throw userErr;
-
-  //     const linkValue = user.national_id_no || user.passport_no;
-  //     if (!linkValue) throw new Error("User has no national_id_no or passport_no");
-
-  //     const { data: citizen, error: citizenErr } = await supabase
-  //       .from("citizens")
-  //       .select("full_name")
-  //       .or(`national_id_no.eq.${linkValue},passport_no.eq.${linkValue}`)
-  //       .single();
-  //     if (citizenErr) throw citizenErr;
-
-  //     const submittedBy = citizen.full_name || "Unknown";
-
-  //     setDisplayDoc({
-  //       fileName: doc.file_name || "Document",
-  //       fileType: doc.file_type,
-  //       filePath: doc.file_url,
-  //       fileUrl: signed?.signedUrl || "",
-  //       status: doc.status,
-  //       uploadedAt: doc.submitted_at,
-  //       submittedBy,
-  //       docType: doc.doc_type,
-  //     });
-  //   } catch (err) {
-  //     console.error("Error fetching doc:", err);
-  //   } finally {
-  //     setLoadingDoc(false);
-  //   }
-  // }
-
-
-  // const updateStatus = async (status: "approved" | "rejected") => {
-  //   if (!displayDoc) return;
-  //   setLoadingAction(true);
-  //   try {
-  //     const res = await fetch(`http://localhost:5000/documents/status`, {
-  //       method: "PUT",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ status }),
-  //     });
-  //     if (!res.ok) throw new Error("Failed to update status");
-  //     const updatedDoc = await res.json();
-  //     setDisplayDoc(prev => (prev ? { ...prev, status: updatedDoc.status } : prev));
-  //     alert("Status updated to " + updatedDoc.status);
-  //   } catch (err) {
-  //     console.error("Error updating status:", err);
-  //     alert("Could not update status");
-  //   } finally {
-  //     setLoadingAction(false);
-  //   }
-  // };
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh", overflow: "hidden" },
