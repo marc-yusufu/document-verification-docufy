@@ -61,7 +61,7 @@ const App = () => {
         <Route element={<Layout />}/>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/queue" element={<QueuePage />} />
-          <Route path="/queueView/:file_url" element={<QueueViewPage />} />
+          <Route path="/queueView/:code_id" element={<QueueViewPage />} />
           <Route path="/settings" element={<SettingsPage />} />
 
         {/* Private Routes */}

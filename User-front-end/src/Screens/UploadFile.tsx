@@ -12,6 +12,7 @@ interface UploadedDoc {
     file_url: string;
     submitted_at: string;
     signed_url?: string;
+    code_id: string;
 }
 
 export default function DocumentUpload() {
@@ -25,6 +26,21 @@ export default function DocumentUpload() {
         fetchRecentDocs();
     }, []);
 
+    //generate a 16-char unique 
+    function generateCode(length: number = 16): string {
+        const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let result = "";
+        const randomValues = new Uint32Array(length);
+        crypto.getRandomValues(randomValues);
+
+        for (let i = 0; i < length; i++) {
+            result += charset[randomValues[i] % charset.length];
+        }
+
+        return result;
+    }
+
+    
     const uploadToSupabase = async (pdfBlob: Blob) => {
         try{
             const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -34,6 +50,7 @@ export default function DocumentUpload() {
             const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
             const fname = `${file?.name}`; //to add file name to the database
             const filePath = `${user.id}/${fileName}`; //edit format to make it a single string
+            const code = generateCode();
 
             const { error: storageError } = await supabase.storage
                 .from(BUCKET_ID)
@@ -53,6 +70,7 @@ export default function DocumentUpload() {
                     doc_type: "document",
                     status: "pending",
                     submitted_at: new Date().toISOString(),
+                    code_id: code,
                 },
                 
             ]);

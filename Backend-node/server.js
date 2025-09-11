@@ -135,17 +135,17 @@ app.get('/documents', async (req, res) => {
 
 
 
-// Fetch document by file_url
-app.get('/documents/:file_url', async (req, res) => {
+// Fetch document by code_id
+app.get('/documents/:code_id', async (req, res) => {
 
-  const fileUrlParams = req.params.file_url;
+  const codeIdParams = req.params.code_id;
 
-  console.log("Backend received file_url:", fileUrlParams);
+  console.log("Backend received file_url:", codeIdParams);
   try {
     const { data: doc, error } = await supabase
       .from("documents")
       .select("*")
-      .eq("file_url", fileUrlParams)
+      .eq("code_id", codeIdParams)
       .single();
     
     console.log("Query result: " , {data: doc, error: error})

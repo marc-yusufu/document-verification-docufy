@@ -15,6 +15,7 @@ interface Document{
   status: string
   submitted_at: string
   signed_url?: string;
+  code_id: string;
 
 }
 
@@ -109,7 +110,7 @@ export default function QueuePage() {
                       <button 
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                         style={styles.viewBtn} 
-                        onClick={() => navigate(`/queueView/${doc.file_url}`)}
+                        onClick={() => navigate(`/queueView/${doc.code_id}`)}
                       >
                         View<MdVisibility/>
                       </button>
