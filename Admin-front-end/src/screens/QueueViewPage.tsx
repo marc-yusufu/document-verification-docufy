@@ -16,6 +16,7 @@ interface Docs {
 
   //supabase
   document_id: string
+  file_name: string
   type: string
   file_url: string
   submitted_at: Date
@@ -87,6 +88,34 @@ export default function QueueViewPage() {
   
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
+  //to update the status of the document
+  const updateStatus = async (status: "approved" | "rejected") => {
+    //setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/documents/${code_id}/status`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to update status");
+      const updatedDoc = await res.json();
+
+      setDisplayDoc(updatedDoc); // Update local state so UI refreshes
+      console.log("Status updated:", updatedDoc.status);
+      window.alert("Document status updated")
+
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert("Could not update status");
+    } finally {
+      //setLoading(false);
+    }
+  };
+
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh", overflow: "hidden" },
@@ -115,25 +144,25 @@ export default function QueueViewPage() {
         <div style={styles.content}>
           {/* Document Preview Area */}
           <div style={styles.documentArea}>
-            {loadingDoc ? (
-              <p style={{ margin: "auto" }}>Loading document...</p>
-            ) : displayDoc ? (
-              displayDoc.fileType === "application/pdf" ? (
+            { displayDoc ? (
+              displayDoc.type === "application/pdf" ? (
                 <iframe
-                  src={displayDoc.fileUrl}
-                  title={displayDoc.fileName}
-                  style={{ border: "none", width: "100%", height: "100%" }}
-                />
-              ) : displayDoc.docType === "image" ? (
+                  src={displayDoc.file_url}
+                  width="100%"
+                  height="100%"
+                  title={displayDoc.file_name}
+                  style={{ border: "none", flex:1  }}
+                ></iframe>
+              ) : displayDoc.type.startsWith("image/") ? (
                 <img
-                  src={displayDoc.fileUrl}
-                  alt={displayDoc.fileName}
+                  src={displayDoc.file_url}
+                  alt={displayDoc.file_name}
                   style={{ maxWidth: "100%", height: "auto" }}
                 />
               ) : (
                 <p>
                   Unsupported file type.{" "}
-                  <a href={displayDoc.fileUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={displayDoc.file_url} target="_blank" rel="noopener noreferrer">
                     Download instead
                   </a>
                 </p>
@@ -146,13 +175,13 @@ export default function QueueViewPage() {
           {/* Right Panel */}
           <RightDetailsPanel
             submittedBy={displayDoc?.submittedBy || "Loading..."}
-            type={displayDoc?.fileName || ""}
+            type={displayDoc?.type || ""}
             branch="Soweto"
-            submittedOn={displayDoc ? new Date(displayDoc.uploadedAt).toDateString() : ""}
+            submittedOn={displayDoc? new Date(displayDoc.submitted_at).toDateString() : ""}
             status={displayDoc?.status || ""}
             commentMaxLength={120}
-            // onApprove={() => updateStatus("approved")}
-            // onReject={() => updateStatus("rejected")}
+            onApprove={() => updateStatus("approved")}
+            onReject={() => updateStatus("rejected")}
             onReassign={() => alert("Reassigned")}
             onCancel={() => navigate("/queue")}
             approveDisabled={loadingAction}

@@ -87,23 +87,23 @@ export default function RightDetailsPanel({
                 </div>
 
                 <div>
-                    <div style={labelStyle}>Type</div>
+                    <div style={labelStyle}>Type:</div>
                     <div style={valueStyle}>{type ?? "-"}</div>
                 </div>
 
                 <div>
-                    <div style={labelStyle}>Branch</div>
+                    <div style={labelStyle}>Branch:</div>
                     <div style={valueStyle}>{branch ?? "-"}</div>
                 </div>
 
                 <div>
-                    <div style={labelStyle}>Submitted on</div>
+                    <div style={labelStyle}>Submitted on:</div>
                     <div style={valueStyle}>{submittedOn ?? "-"}</div>
                 </div>
 
                 <div>
-                    <div style={labelStyle}>Status</div>
-                    <div style={valueStyle}>{status ?? "-"}</div>
+                    <div style={labelStyle}>Status:</div>
+                    <div style={valueStyle} className="text-red-600">{status ?? "-"}</div>
                 </div>
             </div>
 
