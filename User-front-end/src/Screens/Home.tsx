@@ -9,10 +9,11 @@ interface Document {
   document_id: string;
   type: string;
   file_name: string;
-  file_url: string; // path in storage
+  file_path: string; // path in storage
   status: DocumentStatus;
   signed_url?: string;
-  submitted_at: Date;
+  submitted_at: Date; 
+  signed_file_url: string;
 }
 
 const BUCKET_ID = "userDocuments"; // 👈 must match Supabase bucket
@@ -40,7 +41,7 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("documents")
-        .select("document_id, file_name, type, file_url, status, submitted_at")
+        .select("document_id, file_name, type, file_path, status, submitted_at, signed_file_url")
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -63,10 +64,10 @@ export default function Home() {
         data.map(async (doc) => {
           const { data: urlData, error: urlError } = await supabase.storage
             .from(BUCKET_ID)
-            .createSignedUrl(doc.file_url, 30 * 24 * 60 * 60); // 30-days expiry
+            .createSignedUrl(doc.file_path, 30 * 24 * 60 * 60); // 30-days expiry
 
           if (urlError) {
-            console.error("Signed URL error:", doc.file_url, urlError.message);
+            console.error("Signed URL error:", doc.file_path, urlError.message);
           }
 
           return { ...doc, signed_url: urlData?.signedUrl || "" };
@@ -150,9 +151,9 @@ export default function Home() {
                 className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center shadow-sm hover:shadow-md transition"
               >
                 {/* Thumbnail or Icon */}
-                {/\.(png|jpe?g)$/i.test(doc.file_url) ? (
+                {/\.(png|jpe?g)$/i.test(doc.file_path) ? (
                   <img
-                    src={doc.signed_url}
+                    src={doc.signed_url }
                     alt={doc.type}
                     className="w-20 h-20 object-cover rounded-lg mb-2"
                   />
@@ -181,7 +182,7 @@ export default function Home() {
                 {/* Actions */}
                 <div className="flex mt-3 gap-2">
                   <a
-                    href={doc.signed_url}
+                    href={doc.signed_url }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center bg-blue-600 text-white text-xs px-3 py-1 rounded shadow hover:bg-blue-700 transition"

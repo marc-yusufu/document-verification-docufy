@@ -139,6 +139,7 @@ app.get('/documents', async (req, res) => {
 app.get('/documents/:code_id', async (req, res) => {
 
   const codeIdParams = req.params.code_id;
+  const BUCKET_ID = "userDocuments";
 
   console.log("Backend received file_url:", codeIdParams);
   try {
@@ -150,14 +151,28 @@ app.get('/documents/:code_id', async (req, res) => {
     
     console.log("Query result: " , {data: doc, error: error})
 
-    if (error) {
+    if (error || !doc) {
       console.error("Supabase error:", error);
       return res.status(404).json({ error: "Document not found" });
     }
 
-    const fileUrl = doc.filepath ? getFileUrl(req, doc.filepath) : null;
+    // const fileUrl = doc.filepath ? getFileUrl(req, doc.filepath) : null;
 
-    res.json({ ...doc, fileUrl });
+    // res.json({ ...doc, fileUrl });
+
+    const { data: signed } = await supabase.storage
+      .from("userDocuments") //BUCKET storage name
+      .createSignedUrl(doc.file_path, 60 * 60 * 24 * 7); // 7 days
+    
+      // Attach signedUrl so frontend can render
+    const responseDoc = {
+      ...doc,
+      url: signed?.signedUrl ?? null,
+    };
+
+
+    res.json(responseDoc);
+
   } catch (err) {
     console.error("Server error:", err);
     res.status(500).json({ success: false, error: err.message });
