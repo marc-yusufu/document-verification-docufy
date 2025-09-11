@@ -91,15 +91,15 @@ export default function QueueViewPage() {
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
   //to update the status of the document
-  const updateStatus = async (status: "approved" | "rejected") => {
+  const ApproveDoc = async () => {
     //setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/documents/${code_id}/status`,
+        `http://localhost:5000/documents/${code_id}/approve`,
         {
-          method: "PUT",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({ stampText: "APPROVED" }),
         }
       );
 
@@ -184,8 +184,8 @@ export default function QueueViewPage() {
             submittedOn={displayDoc? new Date(displayDoc.submitted_at).toDateString() : ""}
             status={displayDoc?.status || ""}
             commentMaxLength={120}
-            onApprove={() => updateStatus("approved")}
-            onReject={() => updateStatus("rejected")}
+            onApprove={ApproveDoc}
+            onReject={ApproveDoc}
             onReassign={() => alert("Reassigned")}
             onCancel={() => navigate("/queue")}
             approveDisabled={loadingAction}

@@ -9,6 +9,13 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from "path";
 
+import { PDFDocument, rgb } from "pdf-lib";
+import sharp from "sharp";
+import fs from "fs";
+
+//import { supabase } from "./supabaseClient"; // your service key init
+const router = express.Router();
+
 // Load environment variables
 dotenv.config();
 
@@ -180,6 +187,7 @@ app.get('/documents/:code_id', async (req, res) => {
 });
 
 
+
 //Admin Update status of documents
 app.put('/documents/:id/status', async (req, res) => {
   try {
@@ -207,6 +215,111 @@ app.put('/documents/:id/status', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 })
+
+
+
+
+//Admin puts approval stamp on document by pressing approve button
+app.post("/documents/:code_id/approve", async (req, res) => {
+  const { code_id } = req.params;
+  const stampText = req.body.stampText || "APPROVED"; // or dynamic code
+  try {
+    //Fetch the raw document metadata
+    const { data: doc, error: fetchError } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("code_id", code_id)
+      .single();
+
+    if (fetchError || !doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    //Download raw file from Supabase Storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from("documents")
+      .download(doc.file_path);
+
+    if (downloadError || !fileData) throw downloadError;
+
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    let stampedBuffer;
+    let stampedFileName;
+
+    //Apply stamp based on file type
+    if (doc.doc_type === "application/pdf") {
+      const pdfDoc = await PDFDocument.load(buffer);
+      const pages = pdfDoc.getPages();
+
+      pages.forEach((page) => {
+        page.drawText(stampText, {
+          x: 50,
+          y: 50,
+          size: 40,
+          color: rgb(1, 0, 0),
+          opacity: 0.5,
+        });
+      });
+
+      stampedBuffer = Buffer.from(await pdfDoc.save());
+      stampedFileName = `stamped/${Date.now()}_${doc.file_name}`;
+    } else if (doc.mime_type.startsWith("image/")) {
+      const svgWatermark = Buffer.from(
+        `<svg width="500" height="500">
+          <text x="20" y="50" font-size="30" fill="red" opacity="0.5">${stampText}</text>
+        </svg>`
+      );
+      stampedBuffer = await sharp(buffer)
+        .composite([{ input: svgWatermark, gravity: "southeast" }])
+        .toBuffer();
+      stampedFileName = `stamped/${Date.now()}_${doc.file_name}`;
+    } else {
+      return res.status(400).json({ error: "Unsupported file type" });
+    }
+
+    // 4️⃣ Upload stamped file to Supabase storage
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(stampedFileName, stampedBuffer, { contentType: doc.mime_type });
+
+    if (uploadError) throw uploadError;
+
+    // 5️⃣ Insert stamped document metadata into `approved_documents`
+    const { data: approvedDoc, error: insertError } = await supabase
+      .from("approved_documents")
+      .insert([
+        {
+          original_doc_id: doc.document_id,
+          file_name: doc.file_name,
+          file_path: stampedFileName,
+          mime_type: doc.mime_type,
+          doc_type: doc.doc_type,
+          status: "Approved",
+          approved_at: new Date().toISOString(),
+          stamp_text: stampText,
+        },
+      ])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    //update status in raw documents table
+    await supabase
+      .from("documents")
+      .update({ status: "Approved" })
+      .eq("document_id", doc.document_id);
+
+    res.json({ message: "Document stamped and approved!", approvedDoc });
+  } catch (err) {
+    console.error("Approve & Stamp error:", err);
+    res.status(500).json({ error: "Failed to approve and stamp document" });
+  }
+});
+
+
+
+
 
 // Start server locally
 if (!process.env.VERCEL) {
