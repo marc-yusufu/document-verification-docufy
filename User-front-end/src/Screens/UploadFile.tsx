@@ -9,10 +9,11 @@ interface UploadedDoc {
     document_id: string;
     file_name: string;
     type: string;
-    file_url: string;
+    file_path: string;
     submitted_at: string;
     signed_url?: string;
     code_id: string;
+    signed_file_url: string;
 }
 
 export default function DocumentUpload() {
@@ -48,7 +49,8 @@ export default function DocumentUpload() {
             const user = userData.user;
 
             const fileName = `${Date.now()}_${selectedType.replace(/\s+/g, "_")}.pdf`;
-            const fname = `${file?.name}`; //to add file name to the database
+            const fName = `${file?.name}`; //to add file name to the database
+            const fType = `${file?.type}`; // png, pdf, jpg, etc...
             const filePath = `${user.id}/${fileName}`; //edit format to make it a single string
             const code = generateCode();
 
@@ -64,10 +66,10 @@ export default function DocumentUpload() {
             const { error: insertError } = await supabase.from("documents").insert([
                 {
                     user_id: user.id,
-                    file_name: fname,
+                    file_name: fName,
                     type: selectedType,
-                    file_url: filePath,
-                    doc_type: "document",
+                    file_path: filePath,
+                    doc_type: fType, 
                     status: "pending",
                     submitted_at: new Date().toISOString(),
                     code_id: code,
@@ -102,8 +104,8 @@ export default function DocumentUpload() {
             (data ?? []).map(async (doc) => {
                 const { data: signed } = await supabase.storage
                     .from(BUCKET_ID)
-                    .createSignedUrl(doc.file_url, 60 * 60 * 24 * 7);
-                return { ...doc, signed_url: signed?.signedUrl ?? null };
+                    .createSignedUrl(doc.file_path, 60 * 60 * 24 * 7); 
+                return { ...doc, signed_file_url: signed?.signedUrl ?? null };
             })
         );
         setRecentDocs(signedDocs as any);
@@ -205,7 +207,7 @@ export default function DocumentUpload() {
                 <ul className="space-y-2">
                     {recentDocs.map((doc) => (
                         <li key={doc.document_id} className="border-b pb-2">
-                            {doc.signed_url ? (
+                            {doc.signed_file_url ? (
                                 <a
                                     href={doc.signed_url}
                                     target="_blank"

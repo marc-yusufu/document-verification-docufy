@@ -18,11 +18,12 @@ interface Docs {
   document_id: string
   file_name: string
   type: string
-  file_url: string
+  url: string
+  file_path: string;
   submitted_at: Date
   submittedBy: string;
-  docType: string;
   code_id: string;
+  doc_type: string;
 
 }
 
@@ -69,6 +70,7 @@ export default function QueueViewPage() {
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           const doc = await res.json();
           setDisplayDoc(doc);
+          console.log("From the backend: ", doc.url)
         } catch (err) {
           console.error("Error while trying to display the document: ", err);
         }
@@ -145,24 +147,26 @@ export default function QueueViewPage() {
           {/* Document Preview Area */}
           <div style={styles.documentArea}>
             { displayDoc ? (
-              displayDoc.type === "application/pdf" ? (
+              displayDoc.doc_type === "application/pdf" ? (
                 <iframe
-                  src={displayDoc.file_url}
+                  src={displayDoc.url}
                   width="100%"
                   height="100%"
                   title={displayDoc.file_name}
                   style={{ border: "none", flex:1  }}
                 ></iframe>
-              ) : displayDoc.type.startsWith("image/") ? (
+              ) : displayDoc.doc_type.startsWith("image/") ? (
                 <img
-                  src={displayDoc.file_url}
+                  src={displayDoc.url}
                   alt={displayDoc.file_name}
-                  style={{ maxWidth: "100%", height: "auto" }}
+                  width="100%"
+                  height="100%"
+                  style={{ maxWidth: "100%", height: "auto", flex: 1 }}
                 />
               ) : (
                 <p>
                   Unsupported file type.{" "}
-                  <a href={displayDoc.file_url} target="_blank" rel="noopener noreferrer">
+                  <a href={displayDoc.url} target="_blank" rel="noopener noreferrer">
                     Download instead
                   </a>
                 </p>
