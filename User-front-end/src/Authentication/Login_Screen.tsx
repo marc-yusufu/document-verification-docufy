@@ -67,54 +67,62 @@ function LoginScreen() {
 
   return (
     <div className="flex h-screen w-full font-sans overflow-hidden">
-      <div className="w-full md:w-1/2 flex flex-col justify-center px-12 py-10 bg-white z-10">
-        <div className="flex justify-between items-start mb-10">
-          <Link to="/">
-            <img src={logo} alt="Logo" className="h-10 object-contain" />
-          </Link>
-          <div className="flex gap-6 text-blue-600 font-medium text-sm">
-            <Link to="/services" className="hover:underline">Services</Link>
-            <Link to="/about" className="hover:underline">About</Link>
+      <div className="flex  mx-auto my-auto w-[80%] h-[80%]">
+        <div className="w-full md:w-1/2 flex flex-col justify-center px-12 py-10 bg-white z-10 rounded-s-[25px] shadow-2xl">
+          <div className="flex justify-between items-start mb-10">
+            <Link to="/">
+              <img src={logo} alt="Logo" className="h-10 object-contain" />
+            </Link>
+            <div className="flex gap-6 text-blue-600 font-medium text-sm">
+              <Link to="/services" className="hover:underline">Services</Link>
+              <Link to="/about" className="hover:underline">About</Link>
+            </div>
           </div>
+
+          <h2 className="text-3xl font-bold mb-7">Welcome back</h2>
+
+          {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
+
+          <input
+            name="idNumber"
+            placeholder="ID Number or Passport"
+            className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            value={form.idNumber}
+            onChange={handleChange}
+          />
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            value={form.password}
+            onChange={handleChange}
+          />
+
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </div>
 
-        <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
-        <p className="mb-6 text-gray-700">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-600 font-medium hover:underline">
-            Register
-          </Link>
-        </p>
+        <div className="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700 rounded-e-[25px] shadow-2xl">
+            <div className='flex justify-center items-center h-full w-full flex-col'>
+              <p className='text-white font-bold text-[28px]'>Dont have an account?</p>
+              <p className='text-white text-[16px] p-5'>Sign up to get started!</p>
+              <Link to="/signup">
+                  <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
+                    Sign up
+                </button>
+              </Link>
 
-        {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
-
-        <input
-          name="idNumber"
-          placeholder="ID Number or Passport"
-          className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          value={form.idNumber}
-          onChange={handleChange}
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          value={form.password}
-          onChange={handleChange}
-        />
-
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
+          </div>
+        </div>
       </div>
 
-      <div className="hidden md:flex w-1/2 relative overflow-hidden items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700"></div>
     </div>
   );
 }
