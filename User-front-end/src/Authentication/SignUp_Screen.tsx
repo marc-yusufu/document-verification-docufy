@@ -144,93 +144,102 @@ function SignUpScreen() {
 
   return (
 
-    <div className="flex h-screen w-full font-sans">
-      <div className="flex flex-col justify-center p-12 w-full md:w-1/2 bg-white">
-        <div className="flex justify-between mb-8 items-start">
-          <div>
-            <Link to="/">
-              <img src={logo} alt="Logo" className="h-10 mb-2 object-contain" />
+    <div className="flex h-screen w-screen font-sans ">
+      <div className="flex  mx-auto my-auto w-[80%] h-[80%]">
+          <div className="flex flex-col justify-center p-12 w-full md:w-1/2 bg-white rounded-s-[25px] shadow-2xl ">
+          <div className="flex justify-between mb-8 items-start">
+            <div>
+              <Link to="/">
+                <img src={logo} alt="Logo" className="h-10 mb-2 object-contain" />
+              </Link>
+            </div>
+            <div className="flex gap-6 text-blue-600 font-medium text-sm">
+              <Link to="/services" className="hover:underline">Services</Link>
+              <Link to="/about" className="hover:underline">About</Link>
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold mb-7">Create new account.</h2>
+
+          {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
+
+          <div className="flex gap-4 mb-4">
+            <input
+              name="name"
+              placeholder="Name"
+              value={form.name}
+              onChange={handleChange}
+              className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <input
+              name="surname"
+              placeholder="Surname"
+              value={form.surname}
+              onChange={handleChange}
+              className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <input
+            name="idNumber"
+            placeholder="ID Number"
+            value={form.idNumber}
+            onChange={handleChange}
+            className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+          />
+
+          <input
+            name="phone"
+            placeholder="Phone (+27...)"
+            value={form.phone}
+            onChange={handleChange}
+            className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+          />
+
+          <div className="flex gap-4 mb-4">
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+            <input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm Password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            />
+          </div>
+
+          <button
+            onClick={handleRegister}
+            disabled={loading}
+            className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+          >
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </div>
+
+        <div className="hidden  md:block w-1/2 bg-blue-600 rounded-e-[25px] shadow-2xl">
+        <div className='flex justify-center items-center h-full w-full flex-col'>
+            <p className='text-white font-bold text-[28px]'>Already have an account?</p>
+            <p className='text-white text-[16px] p-5'>Login to your account.</p>
+            <Link to="/login">
+                <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
+                  Login
+              </button>
             </Link>
-          </div>
-          <div className="flex gap-6 text-blue-600 font-medium text-sm">
-            <Link to="/services" className="hover:underline">Services</Link>
-            <Link to="/about" className="hover:underline">About</Link>
-          </div>
+
         </div>
 
-        <h2 className="text-3xl font-bold mb-2">Create new account.</h2>
-        <p className="mb-6 text-gray-700">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 font-medium hover:underline">
-            Log in
-          </Link>
-        </p>
-
-        {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
-
-        <div className="flex gap-4 mb-4">
-          <input
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          />
-          <input
-            name="surname"
-            placeholder="Surname"
-            value={form.surname}
-            onChange={handleChange}
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          />
         </div>
-
-        <input
-          name="idNumber"
-          placeholder="ID Number"
-          value={form.idNumber}
-          onChange={handleChange}
-          className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-        />
-
-        <input
-          name="phone"
-          placeholder="Phone (+27...)"
-          value={form.phone}
-          onChange={handleChange}
-          className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-        />
-
-        <div className="flex gap-4 mb-4">
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          />
-          <input
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            className="flex-1 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          />
-        </div>
-
-        <button
-          onClick={handleRegister}
-          disabled={loading}
-          className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-        >
-          {loading ? 'Registering...' : 'Register'}
-        </button>
       </div>
 
-      <div className="hidden md:block w-1/2 bg-blue-600"></div>
     </div>
   );
 }
