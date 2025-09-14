@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@radix-ui/themes": "^3.2.1",
+    "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.54.0",
     "@tailwindcss/vite": "^4.1.11",
     "aos": "^2.3.4",

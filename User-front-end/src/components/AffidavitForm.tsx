@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 
-interface Props {
+interface AffidavitFormProps {
     onSubmit: (pdfBlob: Blob) => Promise<void>;
     loading: boolean;
 }
 
-export default function AffidavitForm({ onSubmit, loading }: Props) {
+export default function AffidavitForm({ onSubmit, loading }: AffidavitFormProps) {
     const [affidavit, setAffidavit] = useState({
         name: "",
         idNumber: "",
@@ -24,171 +24,181 @@ export default function AffidavitForm({ onSubmit, loading }: Props) {
         commissioner: "",
     });
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-        const { name, value } = e.target;
-        setAffidavit((prev) => ({ ...prev, [name]: value }));
-    };
+    // ✅ Generate PDF
+    const generateAffidavitPDF = async (): Promise<Blob> => {
+        const pdf = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4",
+        });
 
-    const generateAffidavitPDF = (): Blob => {
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        pdf.setFontSize(12);
-        pdf.text("AFFIDAVIT", 105, 20, { align: "center" });
+        const img = new Image();
+        img.src = "/affidavit-form.png"; // image must be inside public/
 
-        let y = 35;
-        const lineHeight = 8;
+        return new Promise((resolve) => {
+            img.onload = () => {
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
 
-        const addLine = (label: string, value: string) => {
-            pdf.text(`${label}: ${value}`, 20, y);
-            y += lineHeight;
-        };
+                pdf.addImage(img, "PNG", 0, 0, pageWidth, pageHeight);
 
-        addLine("Name", affidavit.name);
-        addLine("ID Number", affidavit.idNumber);
-        addLine("Age", affidavit.age);
-        addLine("Residing Address", affidavit.residingAddress);
-        addLine("Working Address", affidavit.workingAddress);
-        addLine("Tel (Work)", affidavit.telWork);
-        addLine("Tel (Home)", affidavit.telHome);
-        addLine("Tel (Cell)", affidavit.telCell);
+                pdf.setFontSize(11);
+                pdf.text(affidavit.name, 30, 35);
+                pdf.text(affidavit.idNumber, 45, 43);
+                pdf.text(affidavit.age, 110, 43);
+                pdf.text(affidavit.residingAddress, 57, 51);
+                pdf.text(affidavit.workingAddress, 57, 59);
+                pdf.text(affidavit.telWork, 33, 67.5);
+                pdf.text(affidavit.telHome, 73, 67.5);
+                pdf.text(affidavit.telCell, 117, 67.5);
+                pdf.text(affidavit.declaration, 27, 83, { maxWidth: 160 });
+                pdf.text(affidavit.place, 38, 128);
+                pdf.text(affidavit.date, 113, 128);
+                pdf.text(affidavit.time, 38, 136);
+                pdf.text(affidavit.signature, 46, 144);
 
-        y += lineHeight;
-        pdf.text("Declaration:", 20, y);
-        y += lineHeight;
-        pdf.text(
-            affidavit.declaration || "................................................",
-            20,
-            y,
-            { maxWidth: 170 }
-        );
-
-        y += lineHeight * 4;
-        addLine("Place", affidavit.place);
-        addLine("Date", affidavit.date);
-        addLine("Time", affidavit.time);
-        addLine("Signature", affidavit.signature);
-        addLine("Commissioner of Oaths", affidavit.commissioner);
-
-        return pdf.output("blob") as Blob;
-    };
-
-    const handleSubmit = async () => {
-        const pdfBlob = generateAffidavitPDF();
-        await onSubmit(pdfBlob);
-
-        // reset form
-        setAffidavit({
-            name: "",
-            idNumber: "",
-            age: "",
-            residingAddress: "",
-            workingAddress: "",
-            telWork: "",
-            telHome: "",
-            telCell: "",
-            declaration: "",
-            place: "",
-            date: "",
-            time: "",
-            signature: "",
-            commissioner: "",
+                resolve(pdf.output("blob") as Blob);
+            };
         });
     };
 
-    return (
-        <div className="border p-6 rounded-lg mb-4">
-            <h3 className="text-lg font-semibold mb-4">Affidavit Form</h3>
+    // ✅ Download locally
+    const handleDownload = async () => {
+        const blob = await generateAffidavitPDF();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "affidavit.pdf";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
-            <div className="space-y-3">
+    // ✅ Upload via parent
+    const handleSubmit = async () => {
+        const pdfBlob = await generateAffidavitPDF();
+        await onSubmit(pdfBlob);
+    };
+
+    return (
+        <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-center">Affidavit Form</h2>
+
+            <div className="space-y-4">
                 <input
                     type="text"
-                    name="name"
-                    placeholder="Full Name"
+                    placeholder="Name"
                     value={affidavit.name}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
+                    onChange={(e) => setAffidavit({ ...affidavit, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                     type="text"
-                    name="idNumber"
                     placeholder="ID Number"
                     value={affidavit.idNumber}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
+                    onChange={(e) => setAffidavit({ ...affidavit, idNumber: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <input
-                    type="number"
-                    name="age"
+                    type="text"
                     placeholder="Age"
                     value={affidavit.age}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
+                    onChange={(e) => setAffidavit({ ...affidavit, age: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                     type="text"
-                    name="residingAddress"
                     placeholder="Residing Address"
                     value={affidavit.residingAddress}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
+                    onChange={(e) => setAffidavit({ ...affidavit, residingAddress: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
-                <textarea
-                    name="declaration"
-                    placeholder="Declaration"
-                    value={affidavit.declaration}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded h-24"
+                <input
+                    type="text"
+                    placeholder="Working Address"
+                    value={affidavit.workingAddress}
+                    onChange={(e) => setAffidavit({ ...affidavit, workingAddress: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                     <input
                         type="text"
-                        name="place"
-                        placeholder="Place"
-                        value={affidavit.place}
-                        onChange={handleChange}
-                        className="border p-2 rounded"
+                        placeholder="Tel (Work)"
+                        value={affidavit.telWork}
+                        onChange={(e) => setAffidavit({ ...affidavit, telWork: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <input
-                        type="date"
-                        name="date"
-                        value={affidavit.date}
-                        onChange={handleChange}
-                        className="border p-2 rounded"
+                        type="text"
+                        placeholder="Tel (Home)"
+                        value={affidavit.telHome}
+                        onChange={(e) => setAffidavit({ ...affidavit, telHome: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <input
-                        type="time"
-                        name="time"
-                        value={affidavit.time}
-                        onChange={handleChange}
-                        className="border p-2 rounded"
+                        type="text"
+                        placeholder="Tel (Cell)"
+                        value={affidavit.telCell}
+                        onChange={(e) => setAffidavit({ ...affidavit, telCell: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
+
+                <textarea
+                    placeholder="Declaration"
+                    value={affidavit.declaration}
+                    onChange={(e) => setAffidavit({ ...affidavit, declaration: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 h-24"
+                />
+
+                <div className="grid grid-cols-3 gap-4">
+                    <input
+                        type="text"
+                        placeholder="Place"
+                        value={affidavit.place}
+                        onChange={(e) => setAffidavit({ ...affidavit, place: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Date"
+                        value={affidavit.date}
+                        onChange={(e) => setAffidavit({ ...affidavit, date: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Time"
+                        value={affidavit.time}
+                        onChange={(e) => setAffidavit({ ...affidavit, time: e.target.value })}
+                        className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
                 <input
                     type="text"
-                    name="signature"
                     placeholder="Signature"
                     value={affidavit.signature}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                />
-                <input
-                    type="text"
-                    name="commissioner"
-                    placeholder="Commissioner of Oaths"
-                    value={affidavit.commissioner}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
+                    onChange={(e) => setAffidavit({ ...affidavit, signature: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
             </div>
 
-            <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-                {loading ? "Submitting..." : "Submit Affidavit"}
-            </button>
+            <div className="mt-6 flex justify-between">
+                <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                    Download PDF
+                </button>
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-lg text-white ${loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+                        }`}
+                >
+                    {loading ? "Uploading..." : "Generate & Upload PDF"}
+                </button>
+            </div>
         </div>
     );
 }

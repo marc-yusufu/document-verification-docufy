@@ -10,11 +10,20 @@ const supabase = createClient(
     import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
+// Generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Send OTP via backend
 const sendOtpEmail = async (email: string, otp: string) => {
-    console.log(`Send OTP ${otp} to email: ${email}`);
-    // integrate actual email sending logic here
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to send OTP');
+    return data;
 };
 
 function WorkerLogin() {
@@ -44,6 +53,7 @@ function WorkerLogin() {
 
         setLoading(true);
         try {
+            // Get worker info from Supabase
             const { data: worker, error: workerError } = await supabase
                 .from('workers')
                 .select('email, worker_id_2, role')
@@ -57,11 +67,11 @@ function WorkerLogin() {
                 return;
             }
 
+            // Sign in via Supabase Auth
             const { error: signInError } = await supabase.auth.signInWithPassword({
                 email: worker.email,
                 password: form.password,
             });
-
             if (signInError) {
                 setError('Invalid Worker ID or Password.');
                 setLoading(false);
@@ -73,13 +83,19 @@ function WorkerLogin() {
             set2FAModalOpen(true);
 
             const otp = generateOTP();
-            await supabase.from('worker_otps').insert({
-                worker_id: worker.worker_id_2,
+
+            // Save OTP in Supabase
+            await supabase.from('custom_otps').insert({
+                account_type: 'worker',
+                account_id: worker.worker_id_2,
                 otp,
                 expires_at: new Date(new Date().getTime() + 5 * 60000),
             });
 
+
+            // Send OTP email via backend
             await sendOtpEmail(worker.email, otp);
+
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Login failed. Please try again.');
@@ -92,9 +108,10 @@ function WorkerLogin() {
         if (!currentWorker) return;
 
         const { data } = await supabase
-            .from('worker_otps')
+            .from('custom_otps')
             .select('*')
-            .eq('worker_id', currentWorker.worker_id_2)
+            .eq('account_type', 'worker')
+            .eq('account_id', currentWorker.worker_id_2)
             .eq('otp', code)
             .maybeSingle();
 
@@ -111,12 +128,14 @@ function WorkerLogin() {
 
     const handleResend2FA = async () => {
         if (!currentWorker) return;
+
         const otp = generateOTP();
         await supabase.from('worker_otps').insert({
             worker_id: currentWorker.worker_id_2,
             otp,
             expires_at: new Date(new Date().getTime() + 5 * 60000),
         });
+
         await sendOtpEmail(currentWorker.email, otp);
         alert('OTP resent!');
     };
@@ -125,16 +144,10 @@ function WorkerLogin() {
         <div className="worker-login-container">
             <div className="worker-login-left">
                 <div className="worker-login-header">
-                    <Link to="/">
-                        <img src={logo} alt="Logo" className="worker-login-logo" />
-                    </Link>
+                    <Link to="/"><img src={logo} alt="Logo" className="worker-login-logo" /></Link>
                     <div className="worker-login-links">
-                        <Link to="/register" className="worker-login-link">
-                            Register Worker
-                        </Link>
-                        <Link to="/forgot-password" className="worker-login-link">
-                            Forgot Password
-                        </Link>
+                        <Link to="/register" className="worker-login-link">Register Worker</Link>
+                        <Link to="/forgot-password" className="worker-login-link">Forgot Password</Link>
                     </div>
                 </div>
 
@@ -165,6 +178,7 @@ function WorkerLogin() {
                     {loading ? 'Logging in...' : 'Login'}
                 </button>
             </div>
+
             <div className="worker-login-right"></div>
 
             <TwoFAModal

@@ -2,42 +2,51 @@ import { useState, useEffect } from "react";
 import MainHeader from "../components/mainHeader";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../Authentication/supabaseconfig";
+import DocumentPreview from "../components/DocumentPreview";
+import ProgressTracker from "../components/ProgressTracker";
+import DocumentCard from "../components/DocumentCard";
 
 type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected";
 
-interface Document {
+export interface Document {
   document_id: string;
   type: string;
-  file_url: string; // path in storage
+  file_url: string;
   status: DocumentStatus;
   signed_url?: string;
+  submitted_at?: string;
+  branch?: string;
+  submitted_by?: string;
+  comments?: string;
+  title?: string;
 }
 
-const BUCKET_ID = "userDocuments"; // 👈 must match Supabase bucket
+const BUCKET_ID = "userDocuments";
 
 const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
-  "Verified": { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
-  "Pending": { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
+  Verified: { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
+  Pending: { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
   "Not verified": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
   "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [isTracking, setIsTracking] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isTracking, setIsTracking] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch documents from Supabase
   useEffect(() => {
     const fetchDocs = async () => {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("documents")
-        .select("document_id, type, file_url, status, submitted_at")
+        .select(
+          "document_id, type, file_url, status, submitted_at, branch_assigned, verified_by, Comments"
+        )
         .order("submitted_at", { ascending: false });
 
       if (error) {
@@ -46,182 +55,152 @@ export default function Home() {
         return;
       }
 
-      // Sign each file_url from storage
       const withUrls = await Promise.all(
-        (data ?? []).map(async (doc) => {
+        (data ?? []).map(async (doc: any) => {
           const { data: urlData, error: urlError } = await supabase.storage
             .from(BUCKET_ID)
-            .createSignedUrl(doc.file_url, 60 * 60); // 1-hour expiry
-
-          if (urlError) {
-            console.error("Signed URL error:", doc.file_url, urlError.message);
-          }
-
-          return { ...doc, signed_url: urlData?.signedUrl || "" };
+            .createSignedUrl(doc.file_url, 60 * 60 * 24 * 7);
+          if (urlError) console.warn("signed url error", urlError);
+          return {
+            ...doc,
+            signed_url: urlData?.signedUrl || "",
+            title: doc.type,
+          } as Document;
         })
       );
 
-      setDocuments(withUrls as any);
+      setDocuments(withUrls as Document[]);
       setLoading(false);
+      // auto-select first document (like your mock)
+      if (withUrls.length > 0) setSelectedDoc(withUrls[0] as Document);
     };
 
     fetchDocs();
   }, []);
 
-  const filteredDocs = documents.filter((doc) =>
-    doc.type.toLowerCase().includes(query.toLowerCase())
+  const filteredDocs = documents.filter((d) =>
+    d.type.toLowerCase().includes(query.toLowerCase())
   );
 
-  const pendingDoc = documents.find((doc) => doc.status === "Pending");
+  const pendingDoc = documents.find((d) => d.status === "Pending");
 
   useEffect(() => {
     if (!pendingDoc || !isTracking) return;
-
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + Math.floor(Math.random() * 10);
-        return next >= 100 ? 100 : next;
-      });
-    }, 800);
-
+      setProgress((p) => (p >= 100 ? 100 : p + Math.floor(Math.random() * 12)));
+    }, 700);
     return () => clearInterval(interval);
   }, [pendingDoc, isTracking]);
 
-  const handleUploadClick = () => {
-    navigate("/upload");
-  };
-
+  const handleUploadClick = () => navigate("/upload");
   const startTracking = () => {
     setProgress(0);
     setIsTracking(true);
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-gray-100 p-6">
       <MainHeader />
 
-      {/* Search & Upload */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center border border-gray-300 rounded-full px-4 py-2 w-full max-w-md bg-white shadow-sm">
-          <img src="/IconPac/search (2).png" alt="Search" className="w-4 h-4" />
+      {/* Search & Upload row */}
+      <div className="flex flex-wrap items-center gap-4 my-4">
+        <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm border border-gray-200 max-w-md w-full">
+          <img src="/IconPac/search (2).png" alt="search" className="w-4 h-4" />
           <input
-            type="text"
+            className="ml-3 outline-none text-sm w-full"
             placeholder="Search documents..."
-            className="ml-2 flex-1 outline-none text-sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition shadow"
           onClick={handleUploadClick}
+          className="ml-auto md:ml-0 bg-blue-600 text-white px-6 py-2 rounded-full shadow hover:bg-blue-700"
         >
           Upload
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Document Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[500px] pr-2 flex-1">
-          {loading ? (
-            <div className="col-span-full text-center text-gray-500 py-10">
-              Loading documents...
-            </div>
-          ) : filteredDocs.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 py-10">
-              No documents found.
-            </div>
-          ) : (
-            filteredDocs.map((doc) => (
-              <div
-                key={doc.document_id}
-                className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center shadow-sm hover:shadow-md transition"
-              >
-                {/* Thumbnail or Icon */}
-                {/\.(png|jpe?g)$/i.test(doc.file_url) ? (
-                  <img
-                    src={doc.signed_url}
-                    alt={doc.type}
-                    className="w-20 h-20 object-cover rounded-lg mb-2"
+      <div className="flex gap-6">
+        {/* Left big white workspace */}
+        <div className="flex-1">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 min-h-[520px]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {loading ? (
+                <div className="col-span-full text-center text-gray-500 py-10">
+                  Loading documents...
+                </div>
+              ) : filteredDocs.length === 0 ? (
+                <div className="col-span-full text-center text-gray-500 py-10">
+                  No documents found.
+                </div>
+              ) : (
+                filteredDocs.map((doc) => (
+                  <DocumentCard
+                    key={doc.document_id}
+                    doc={doc}
+                    selected={selectedDoc?.document_id === doc.document_id}
+                    onClick={() => setSelectedDoc(doc)}
+                    statusStyles={statusStyles}
                   />
-                ) : (
-                  <div className="text-5xl">📄</div>
-                )}
-
-                {/* Document type */}
-                <div className="text-sm text-center mt-2 font-medium text-gray-800">
-                  {doc.type}
-                </div>
-
-                {/* Status */}
-                <div
-                  className={`text-xs mt-1 flex items-center gap-1 ${statusStyles[doc.status]?.color || "text-gray-500"
-                    }`}
-                >
-                  <img
-                    src={statusStyles[doc.status]?.icon || "/IconPac/question.png"}
-                    alt={doc.status}
-                    className="w-4 h-4"
-                  />
-                  {doc.status}
-                </div>
-
-                {/* Actions */}
-                <div className="flex mt-3 gap-2">
-                  <a
-                    href={doc.signed_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center bg-blue-600 text-white text-xs px-3 py-1 rounded shadow hover:bg-blue-700 transition"
-                  >
-                    <img
-                      src="/IconPac/download (1).png"
-                      alt="Download"
-                      className="w-3 h-3 inline-block mr-1"
-                    />
-                    Download
-                  </a>
-                  <button className="flex items-center text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 transition">
-                    <img
-                      src="/IconPac/share.png"
-                      alt="Share"
-                      className="w-4 h-4"
-                    />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Progress Tracker */}
-        {pendingDoc && (
-          <div className="bg-blue-50 border border-blue-300 rounded-2xl p-5 w-full h-40 max-w-sm shadow-sm">
-            <h3 className="text-blue-900 font-semibold mb-2">
-              Tracking Document
-            </h3>
-            <div className="text-sm mb-2 text-blue-900 font-medium">
-              {pendingDoc.type}
-            </div>
+        {/* Right column: top Progress + bottom Document preview */}
+        <div className="w-[360px] flex flex-col gap-6">
+          {/* Progress box */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+            {pendingDoc ? (
+              <>
+                <div className="flex items-start gap-3">
+                  <img src="/IconPac/document.png" className="w-8 h-8" alt="doc" />
+                  <div className="flex-1">
+                    <div className="font-medium">{pendingDoc.title || pendingDoc.type}</div>
+                    <div className="text-xs text-gray-500">Processing</div>
+                  </div>
+                </div>
 
-            <div className="w-full bg-blue-100 h-3 rounded-full overflow-hidden mb-1">
-              <div
-                className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <div className="text-xs text-blue-800 mb-2">{progress}% complete</div>
-
-            {!isTracking && (
-              <button
-                className="bg-blue-600 text-white px-4 py-1 text-xs rounded hover:bg-blue-700 transition"
-                onClick={startTracking}
-              >
-                Start Tracking
-              </button>
+                <div className="mt-4">
+                  <ProgressTracker status={pendingDoc.status} />
+                  <div className="mt-3">
+                    <div className="w-full bg-blue-100 h-2 rounded-full">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-blue-700 mt-2 flex justify-between">
+                      <span>Processing</span>
+                      <span>{progress}%</span>
+                    </div>
+                    {!isTracking && (
+                      <button
+                        onClick={startTracking}
+                        className="mt-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs"
+                      >
+                        Start Tracking
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-gray-500">No pending documents</div>
             )}
           </div>
-        )}
+
+          {/* Document preview */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+            {selectedDoc ? (
+              <DocumentPreview document={selectedDoc} statusStyles={statusStyles} />
+            ) : (
+              <div className="text-gray-500">Select a document to preview</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -82,72 +82,82 @@ export default function DocumentUpload() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow">
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Header always at top */}
             <MainHeader />
 
-            <h2 className="text-2xl font-bold mb-4">Upload Document</h2>
+            {/* Page Content */}
+            <main className="flex-1 p-8">
+                <h2 className="text-2xl font-bold mb-6">Upload Document</h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {[
-                    "Proof of Identity",
-                    "Proof of Residence",
-                    "Additional Documents",
-                    "Affidavit",
-                ].map((type) => (
-                    <div
-                        key={type}
-                        onClick={() => setSelectedType(type)}
-                        className={`cursor-pointer p-4 border rounded-lg text-center ${selectedType === type
-                                ? "border-blue-500 bg-blue-50"
-                                : "border-gray-300"
-                            }`}
-                    >
-                        {type}
-                    </div>
-                ))}
-            </div>
-
-            {selectedType === "Affidavit" ? (
-                <AffidavitForm onSubmit={uploadToSupabase} loading={loading} />
-            ) : (
-                <div className="border-2 border-dashed p-6 text-center mb-4">
-                    <input
-                        id="fileInput"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                        className="hidden"
-                    />
-                    <label htmlFor="fileInput" className="cursor-pointer text-blue-600">
-                        {file ? file.name : "Click to upload or drag and drop"}
-                    </label>
-                </div>
-            )}
-
-            <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-2">Recently Uploaded</h3>
-                <ul className="space-y-2">
-                    {recentDocs.map((doc) => (
-                        <li key={doc.document_id} className="border-b pb-2">
-                            {doc.signed_url ? (
-                                <a
-                                    href={doc.signed_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 underline"
-                                >
-                                    {doc.type}
-                                </a>
-                            ) : (
-                                <span className="text-gray-500">{doc.type}</span>
-                            )}
-                            <span className="text-gray-500 text-sm ml-2">
-                                {new Date(doc.submitted_at).toLocaleString()}
-                            </span>
-                        </li>
+                {/* Document Types */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    {[
+                        "Proof of Identity",
+                        "Proof of Residence",
+                        "Additional Documents",
+                        "Affidavit",
+                    ].map((type) => (
+                        <div
+                            key={type}
+                            onClick={() => setSelectedType(type)}
+                            className={`cursor-pointer p-4 border rounded-lg text-center ${selectedType === type
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-gray-300"
+                                }`}
+                        >
+                            {type}
+                        </div>
                     ))}
-                </ul>
-            </div>
+                </div>
+
+                {/* Upload Area */}
+                {selectedType === "Affidavit" ? (
+                    <AffidavitForm onSubmit={uploadToSupabase} loading={loading} />
+                ) : (
+                    <div className="border-2 border-dashed p-8 text-center mb-6 bg-white rounded-lg shadow-sm">
+                        <input
+                            id="fileInput"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                            className="hidden"
+                        />
+                        <label
+                            htmlFor="fileInput"
+                            className="cursor-pointer text-blue-600"
+                        >
+                            {file ? file.name : "Click to upload or drag and drop"}
+                        </label>
+                    </div>
+                )}
+
+                {/* Recent Documents */}
+                <section className="mt-10">
+                    <h3 className="text-lg font-semibold mb-3">Recently Uploaded</h3>
+                    <ul className="space-y-2">
+                        {recentDocs.map((doc) => (
+                            <li key={doc.document_id} className="border-b pb-2">
+                                {doc.signed_url ? (
+                                    <a
+                                        href={doc.signed_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 underline"
+                                    >
+                                        {doc.type}
+                                    </a>
+                                ) : (
+                                    <span className="text-gray-500">{doc.type}</span>
+                                )}
+                                <span className="text-gray-500 text-sm ml-2">
+                                    {new Date(doc.submitted_at).toLocaleString()}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            </main>
         </div>
     );
 }

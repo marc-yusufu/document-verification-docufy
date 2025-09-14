@@ -44,8 +44,8 @@ export default function SettingPage() {
     label: string;
     settingKey: keyof typeof isOn;
   }) => (
-    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-300 text-[18px]">
-      <label htmlFor={settingKey} className="cursor-pointer select-none text-gray-800">
+    <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200 text-[16px]">
+      <label htmlFor={settingKey} className="cursor-pointer select-none text-gray-700 font-medium">
         {label}
       </label>
       <Switch
@@ -57,28 +57,27 @@ export default function SettingPage() {
         onColor="#2563eb"
         uncheckedIcon={false}
         checkedIcon={false}
-        height={24}
-        width={48}
+        height={22}
+        width={44}
       />
     </div>
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto relative bg-gray-50 min-h-screen">
+    <div className="bg-gray-100 min-h-screen">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-300">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow">
         <MainHeader />
       </header>
 
-      <div className="flex flex-col lg:flex-row w-full pt-[64px]">
+      <div className="pt-[80px] max-w-6xl mx-auto px-4 flex flex-col lg:flex-row gap-6">
         {/* Sidebar */}
-        <aside className="fixed top-[64px] left-0 w-[220px] h-[55vh] bg-white border-r border-gray-300 overflow-y-auto z-40 p-4 rounded-b-lg">
-          {/* 64px is the height of the header */}
-          <div className="bg-gray-100 rounded-lg p-3 flex items-center gap-2 mb-6">
+        <aside className="w-full lg:w-[240px] bg-white rounded-xl shadow p-4 h-fit sticky top-[90px]">
+          <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-2 mb-6 border border-gray-200">
             <input
               type="text"
               placeholder="Search..."
-              className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400"
+              className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -90,124 +89,74 @@ export default function SettingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m21 21-5.2-5.2M16 10a6 6 0 11-12 0 6 6 0 0112 0z" />
             </svg>
           </div>
-          <nav className="space-y-3 text-gray-700">
-            <button
-              onClick={() => handleScroll(section1)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
-            >
-              <img src="/public/IconPac/user (2).png" alt="User" className="w-4 h-4" />
+          <nav className="space-y-2 text-gray-700 text-sm">
+            <button onClick={() => handleScroll(section1)} className="w-full text-left px-3 py-2 rounded-md hover:bg-blue-50 transition">
               Account Settings
             </button>
-            <button
-              onClick={() => handleScroll(section2)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
-            >
-              <img src="/public/IconPac/lock.png" alt="Lock" className="w-4 h-4" />
+            <button onClick={() => handleScroll(section2)} className="w-full text-left px-3 py-2 rounded-md hover:bg-blue-50 transition">
               Security Settings
             </button>
-            <button
-              onClick={() => handleScroll(section3)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
-            >
-              <img src="/public/IconPac/bell-notification-social-media.png" alt="Bell" className="w-4 h-4" />
+            <button onClick={() => handleScroll(section3)} className="w-full text-left px-3 py-2 rounded-md hover:bg-blue-50 transition">
               Notification Preferences
             </button>
-            <button
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
-            >
-              <img src="/public/IconPac/moon.png" alt="Theme" className="w-4 h-4" />
-              Theme
-            </button>
-            <button
-              onClick={() => handleScroll(section4)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-50 transition select-none"
-            >
-              <img src="/public/IconPac/user-headset (2).png" alt="Support" className="w-4 h-4" />
+            <button onClick={() => handleScroll(section4)} className="w-full text-left px-3 py-2 rounded-md hover:bg-blue-50 transition">
               Support & Feedback
             </button>
           </nav>
         </aside>
 
-        {/* Main Settings Area */}
-        <main className="ml-[220px] p-6 pr-10 flex-1">
+        {/* Main Settings */}
+        <main className="flex-1 bg-white rounded-xl shadow p-6">
           {/* Account Settings */}
           <section ref={section1}>
-            <h2 className="text-2xl font-semibold mb-6 text-gray-900">Account Settings</h2>
-            <div className="flex flex-col items-start gap-6">
+            <h2 className="text-xl font-bold mb-6 text-gray-900">Account Settings</h2>
+            <div className="flex flex-col md:flex-row items-start gap-6">
               <label
                 htmlFor="profilePicture"
-                className="relative cursor-pointer w-[170px] h-[170px] rounded-full overflow-hidden border border-gray-300 flex justify-center items-center hover:ring-2 hover:ring-blue-400 transition"
+                className="relative cursor-pointer w-[140px] h-[140px] rounded-full overflow-hidden border border-gray-200 flex justify-center items-center hover:ring-2 hover:ring-blue-400 transition"
               >
                 {imageUrl ? (
                   <img src={imageUrl} alt="Profile" className="object-cover w-full h-full" />
                 ) : (
-                  <svg
-                    className="w-16 h-16 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"
-                    />
+                  <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z" />
                   </svg>
                 )}
-                <input
-                  id="profilePicture"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  hidden
-                />
+                <input id="profilePicture" type="file" accept="image/*" onChange={handleImageChange} hidden />
               </label>
 
               <div className="space-y-4 w-full max-w-md">
                 <div>
-                  <label className="block font-medium text-gray-800">Name</label>
-                  <input
-                    type="text"
-                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+                  <label className="block text-gray-700 font-medium">Name</label>
+                  <input type="text" className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block font-medium text-gray-800">Email</label>
-                  <input
-                    type="email"
-                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+                  <label className="block text-gray-700 font-medium">Email</label>
+                  <input type="email" className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div>
-                  <label className="block font-medium text-gray-800">Password</label>
-                  <input
-                    type="password"
-                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+                  <label className="block text-gray-700 font-medium">Password</label>
+                  <input type="password" className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400" />
                 </div>
               </div>
             </div>
           </section>
 
           {/* Security Settings */}
-          <section ref={section2} className="mt-12">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-900">Security Settings</h2>
+          <section ref={section2} className="mt-10">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Security Settings</h2>
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-800">Login Activity</h3>
+                <h3 className="text-lg font-medium text-gray-700">Login Activity</h3>
                 <div className="w-full max-w-xl h-24 flex items-center justify-center border border-dashed rounded-lg text-gray-500 mt-2 select-none">
                   No activity
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-800">Session Timeout</h3>
+                <h3 className="text-lg font-medium text-gray-700">Session Timeout</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {["5", "10", "15", "30", "60", "90", "130", "200"].map((time) => (
-                    <button
-                      key={time}
-                      className="w-20 border border-gray-300 px-3 py-1 rounded-full text-gray-700 hover:bg-blue-50 transition select-none"
-                    >
+                  {["5", "10", "15", "30", "60"].map((time) => (
+                    <button key={time} className="px-4 py-1 border border-gray-300 rounded-full text-gray-700 hover:bg-blue-50">
                       {time} min
                     </button>
                   ))}
@@ -217,9 +166,9 @@ export default function SettingPage() {
           </section>
 
           {/* Notification Preferences */}
-          <section ref={section3} className="mt-12">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-900">Notification Preferences</h2>
-            <div className="border border-gray-300 rounded-lg overflow-hidden max-w-2xl">
+          <section ref={section3} className="mt-10">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Notification Preferences</h2>
+            <div className="border border-gray-200 rounded-lg overflow-hidden max-w-2xl">
               <NotificationSwitch label="Notifications" settingKey="notifications" />
               <NotificationSwitch label="Email Notification" settingKey="emailNotification" />
               <NotificationSwitch label="Push Notification" settingKey="pushNotification" />
@@ -229,47 +178,31 @@ export default function SettingPage() {
           </section>
 
           {/* Support & Feedback */}
-          <section ref={section4} className="mt-12">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-900">Support & Feedback</h2>
+          <section ref={section4} className="mt-10">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Support & Feedback</h2>
             <div className="space-y-6 max-w-2xl">
               <div className="flex justify-between items-center">
-                <p className="text-lg text-gray-800 select-none">Help Center: Access FAQs and support articles</p>
-                <a
-                  href="#"
-                  aria-label="Open Help Center"
-                  className="text-blue-600 hover:underline"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5M7.5 16.5L21 3M21 3h-5.25M21 3v5.25"
-                    />
-                  </svg>
+                <p className="text-gray-700">Help Center: Access FAQs and support articles</p>
+                <a href="#" aria-label="Open Help Center" className="text-blue-600 hover:underline text-sm">
+                  Open
                 </a>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-800">Contact Support</h3>
-                <p className="text-sm text-gray-700 select-text">Tel: +27 65 456 7890</p>
-                <p className="text-sm text-gray-700 select-text">Email: support@mm.com</p>
+                <h3 className="text-lg font-medium text-gray-700">Contact Support</h3>
+                <p className="text-sm text-gray-600">Tel: +27 65 456 7890</p>
+                <p className="text-sm text-gray-600">Email: support@mm.com</p>
               </div>
 
               <div>
-                <h3 className="text-lg font-medium text-gray-800">Submit Feedback</h3>
+                <h3 className="text-lg font-medium text-gray-700">Submit Feedback</h3>
                 <textarea
                   maxLength={120}
                   placeholder="Max 120 Characters"
-                  className="w-full p-3 border border-gray-300 rounded-lg mt-2 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900"
+                  className="w-full p-3 border border-gray-300 rounded-lg mt-2 h-28 resize-none focus:ring-2 focus:ring-blue-400"
                 />
                 <div className="mt-3 text-right">
-                  <button className="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-700 transition select-none">
+                  <button className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">
                     Submit
                   </button>
                 </div>

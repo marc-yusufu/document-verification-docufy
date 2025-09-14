@@ -13,6 +13,7 @@ interface FormData {
   surname: string;
   idNumber: string;
   phone: string;
+  email: string;
   password: string;
   confirmPassword: string;
 }
@@ -23,6 +24,7 @@ function SignUpScreen() {
     surname: '',
     idNumber: '',
     phone: '',
+    email: '',
     password: '',
     confirmPassword: '',
   });
@@ -37,9 +39,9 @@ function SignUpScreen() {
   };
 
   const validateForm = () => {
-    const { name, surname, idNumber, phone, password, confirmPassword } = form;
+    const { name, surname, idNumber, phone, email, password, confirmPassword } = form;
 
-    if (!name || !surname || !idNumber || !phone || !password || !confirmPassword)
+    if (!name || !surname || !idNumber || !phone || !email || !password || !confirmPassword)
       return 'Please fill in all fields.';
 
     // Check ID number or passport
@@ -51,6 +53,9 @@ function SignUpScreen() {
 
     if (!/^\+?\d{10,15}$/.test(phone))
       return 'Invalid phone number.';
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return 'Invalid email address.';
 
     if (password.length < 8)
       return 'Password must be at least 8 characters.';
@@ -72,7 +77,7 @@ function SignUpScreen() {
     setLoading(true);
 
     try {
-      const email = `user${form.idNumber}@gmail.com`;
+      const fakeEmail = `user${form.idNumber}@gmail.com`;
       const isID = /^\d{13}$/.test(form.idNumber);
       const columnToCheck = isID ? 'national_id_no' : 'passport_no';
 
@@ -98,7 +103,7 @@ function SignUpScreen() {
 
       // 2️⃣ Create user in auth.users
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: fakeEmail,
         password: form.password,
         options: {
           data: {
@@ -107,6 +112,7 @@ function SignUpScreen() {
             idNumber: isID ? form.idNumber : null,
             passportNo: !isID ? form.idNumber : null,
             phone: form.phone,
+            email: form.email,
           },
         },
       });
@@ -122,6 +128,7 @@ function SignUpScreen() {
             national_id_no: isID ? form.idNumber : null,
             passport_no: !isID ? form.idNumber : null,
             phone: form.phone,
+            email: form.email,
           }]);
 
         if (insertError) {
@@ -197,6 +204,14 @@ function SignUpScreen() {
           name="phone"
           placeholder="Phone (+27...)"
           value={form.phone}
+          onChange={handleChange}
+          className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+        />
+
+        <input
+          name="email"
+          placeholder="Email"
+          value={form.email}
           onChange={handleChange}
           className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
         />
