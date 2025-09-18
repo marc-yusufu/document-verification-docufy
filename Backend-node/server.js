@@ -237,7 +237,7 @@ app.post("/documents/:code_id/approve", async (req, res) => {
 
     //Download raw file from Supabase Storage
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from("documents")
+      .from("userDocuments")
       .download(doc.file_path);
 
     if (downloadError || !fileData) throw downloadError;
@@ -262,7 +262,7 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       });
 
       stampedBuffer = Buffer.from(await pdfDoc.save());
-      stampedFileName = `stamped/${Date.now()}_${doc.file_name}`;
+      stampedFileName = `${Date.now()}_${doc.file_name}`;
     } else if (doc.mime_type.startsWith("image/")) {
       const svgWatermark = Buffer.from(
         `<svg width="500" height="500">
@@ -272,14 +272,14 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       stampedBuffer = await sharp(buffer)
         .composite([{ input: svgWatermark, gravity: "southeast" }])
         .toBuffer();
-      stampedFileName = `stamped/${Date.now()}_${doc.file_name}`;
+      stampedFileName = `${Date.now()}_${doc.file_name}`;
     } else {
       return res.status(400).json({ error: "Unsupported file type" });
     }
 
     // 4️⃣ Upload stamped file to Supabase storage
     const { error: uploadError } = await supabase.storage
-      .from("documents")
+      .from("userDocuments")
       .upload(stampedFileName, stampedBuffer, { contentType: doc.mime_type });
 
     if (uploadError) throw uploadError;
