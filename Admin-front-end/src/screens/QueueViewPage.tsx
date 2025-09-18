@@ -102,6 +102,7 @@ export default function QueueViewPage() {
           body: JSON.stringify({ stampText: "APPROVED" }),
         }
       );
+      console.log("Response: ", res);
 
       if (!res.ok) throw new Error("Failed to update status");
       const updatedDoc = await res.json();
