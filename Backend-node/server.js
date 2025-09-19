@@ -168,7 +168,7 @@ app.get('/documents/:code_id', async (req, res) => {
     // res.json({ ...doc, fileUrl });
 
     const { data: signed } = await supabase.storage
-      .from("userDocuments") //BUCKET storage name
+      .from(BUCKET_ID) //BUCKET storage name
       .createSignedUrl(doc.file_path, 60 * 60 * 24 * 7); // 7 days
     
       // Attach signedUrl so frontend can render
@@ -223,8 +223,10 @@ app.put('/documents/:id/status', async (req, res) => {
 app.post("/documents/:code_id/approve", async (req, res) => {
   const { code_id } = req.params;
   const stampText = req.body.stampText || "APPROVED"; // or dynamic code
+  const BUCKET_ID = "userDocuments";
   try {
     //Fetch the raw document metadata
+    console.log("1. Fetching document for code_id:", code_id); //1
     const { data: doc, error: fetchError } = await supabase
       .from("documents")
       .select("*")
@@ -235,16 +237,19 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       return res.status(404).json({ error: "Document not found" });
     }
 
-    //Download raw file from Supabase Storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from("userDocuments")
-      .download(doc.file_path);
+    console.log("Full doc object: ", doc);
 
-    if (downloadError || !fileData) throw downloadError;
+    //Download original file from Supabase Storage 
+    console.log("2. Downloading file from path:", doc.file_path);
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from(BUCKET_ID)
+      .download(doc.file_path)
+
+    if (downloadError || !doc) throw downloadError;
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
     let stampedBuffer;
-    let stampedFileName;
+    let stampedFileName = `${Date.now()}_${doc.file_name}`;
 
     //Apply stamp based on file type
     if (doc.doc_type === "application/pdf") {
@@ -262,8 +267,8 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       });
 
       stampedBuffer = Buffer.from(await pdfDoc.save());
-      stampedFileName = `${Date.now()}_${doc.file_name}`;
-    } else if (doc.mime_type.startsWith("image/")) {
+      
+    } else if (doc.doc_type.startsWith("image/")) {
       const svgWatermark = Buffer.from(
         `<svg width="500" height="500">
           <text x="20" y="50" font-size="30" fill="red" opacity="0.5">${stampText}</text>
@@ -277,43 +282,43 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       return res.status(400).json({ error: "Unsupported file type" });
     }
 
-    // 4️⃣ Upload stamped file to Supabase storage
+    //Upload stamped file to Supabase storage
+    console.log("Uplaoding stamped file", stampedFileName);
     const { error: uploadError } = await supabase.storage
-      .from("userDocuments")
-      .upload(stampedFileName, stampedBuffer, { contentType: doc.mime_type });
+      .from(BUCKET_ID)
+      .upload(stampedFileName, stampedBuffer, {
+         contentType: doc.doc_type,
+         upsert: true, //this is to overwrite if the name already exist 
+        });
 
     if (uploadError) throw uploadError;
 
-    // 5️⃣ Insert stamped document metadata into `approved_documents`
-    const { data: approvedDoc, error: insertError } = await supabase
-      .from("approved_documents")
-      .insert([
-        {
-          original_doc_id: doc.document_id,
-          file_name: doc.file_name,
-          file_path: stampedFileName,
-          mime_type: doc.mime_type,
-          doc_type: doc.doc_type,
-          status: "Approved",
-          approved_at: new Date().toISOString(),
-          stamp_text: stampText,
-        },
-      ])
+    //update status in raw documents table
+    const {data: updatedDoc, error: updateError} = await supabase
+      .from("documents")
+      .update({ 
+        status: "Approved",
+        file_path: stampedFileName,
+        verified_at: new Date().toISOString(),
+        stamp_text: stampText, 
+      })
+      .eq("document_id", doc.document_id)
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if(updateError) throw updateError;
 
-    //update status in raw documents table
-    await supabase
-      .from("documents")
-      .update({ status: "Approved" })
-      .eq("document_id", doc.document_id);
+    res.json({ 
+      message: "Document stamped and approved!", 
+      updatedDoc, 
+    });
 
-    res.json({ message: "Document stamped and approved!", approvedDoc });
   } catch (err) {
     console.error("Approve & Stamp error:", err);
     res.status(500).json({ error: "Failed to approve and stamp document" });
+    console.error("Detailed error at step:", err.message);
+    console.error("Error stack:", err.stack);
+    res.status(500).json({ error: "Failed to approve and stamp document", details: err.message });
   }
 });
 
