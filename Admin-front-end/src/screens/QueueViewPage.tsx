@@ -94,6 +94,7 @@ export default function QueueViewPage() {
   const ApproveDoc = async () => {
     //setLoading(true);
     try {
+      let stampText;
       const res = await fetch(
         `http://localhost:5000/documents/${code_id}/approve`,
         {
