@@ -8,6 +8,7 @@ import {
 	ChevronRightIcon,
 	DotFilledIcon,
 } from "@radix-ui/react-icons";
+import { FaFilter } from "react-icons/fa6";
 import "./radixStyles.css";
 
 type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected";
@@ -39,6 +40,7 @@ export default function Home() {
   const [isTracking, setIsTracking] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("All");
   const navigate = useNavigate();
 
   // Fetch documents from Supabase
@@ -88,9 +90,11 @@ export default function Home() {
     fetchDocs();
   }, []);
 
-  const filteredDocs = documents.filter((doc) =>
-    doc.type.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredDocs = documents.filter((doc) =>{
+    const matchesSearch = doc.file_name.toLowerCase().includes(query.toLowerCase());
+    const matchesStatus = filter === "All" ? true : doc.status === filter;
+    return matchesSearch && matchesStatus
+  });
 
   const pendingDoc = documents.find((doc) => doc.status === "Pending");
 
@@ -133,10 +137,13 @@ export default function Home() {
           />
         </div>
 
-        {/* filter file status */}
+        {/* filter by file status */}
         <Menubar.Root className="MenubarRoot">
           <Menubar.Menu>
-            <Menubar.Trigger className="MenubarTrigger">Filter</Menubar.Trigger>
+            <Menubar.Trigger className="MenubarTrigger">
+              {filter}
+              <FaFilter />
+            </Menubar.Trigger>
             <Menubar.Portal>
               <Menubar.Content
                 className="MenubarContent"
@@ -144,13 +151,24 @@ export default function Home() {
                 sideOffset={5}
                 alignOffset={-3}
               >
-                <Menubar.Item className="MenubarItem">
+                <Menubar.Item 
+                  className={`MenubarItem ${filter === "All" ? "bg-gray-200" : ""}`}
+                  onSelect={() => setFilter("All")}>
+                  All
+                </Menubar.Item>
+                <Menubar.Item 
+                  className={`MenubarItem ${filter === "Pending" ? "bg-gray-200" : ""}`}
+                  onSelect={()=> setFilter("pending")}>
                   Pending
                 </Menubar.Item>
-                <Menubar.Item className="MenubarItem">
+                <Menubar.Item 
+                  className={`MenubarItem ${filter === "Approved" ? "bg-gray-200" : ""}`}
+                  onSelect={()=> setFilter("Approved")}>
                   Verified 
                 </Menubar.Item>
-                <Menubar.Item className="MenubarItem">
+                <Menubar.Item 
+                  className={`MenubarItem ${filter === "Rejected" ? "bg-gray-200" : ""}`}
+                  onSelect={()=> setFilter("rejected")}>
                   Rejected
                 </Menubar.Item>
               </Menubar.Content>
