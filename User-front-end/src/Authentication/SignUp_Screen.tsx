@@ -41,10 +41,15 @@ function SignUpScreen() {
   const validateForm = () => {
     const { name, surname, idNumber, phone, email, password, confirmPassword } = form;
 
+<<<<<<< Updated upstream
     if (!name || !surname || !idNumber || !phone || !email || !password || !confirmPassword)
       return 'Please fill in all fields.';
+=======
+    if (!name || !surname || !idNumber || !phone || !password || !confirmPassword)
+      return 'Please fill in all required fields.';
+>>>>>>> Stashed changes
 
-    // Check ID number or passport
+    // Checking ID number or passport
     const isID = /^\d{13}$/.test(idNumber);
     const isPassport = /^A\d{7}$/.test(idNumber);
 
@@ -54,7 +59,11 @@ function SignUpScreen() {
     if (!/^\+?\d{10,15}$/.test(phone))
       return 'Invalid phone number.';
 
+<<<<<<< Updated upstream
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+=======
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+>>>>>>> Stashed changes
       return 'Invalid email address.';
 
     if (password.length < 8)
@@ -65,6 +74,7 @@ function SignUpScreen() {
 
     return null;
   };
+
 
   const handleRegister = async () => {
     setError('');
@@ -77,11 +87,14 @@ function SignUpScreen() {
     setLoading(true);
 
     try {
+<<<<<<< Updated upstream
       const fakeEmail = `user${form.idNumber}@gmail.com`;
+=======
+>>>>>>> Stashed changes
       const isID = /^\d{13}$/.test(form.idNumber);
       const columnToCheck = isID ? 'national_id_no' : 'passport_no';
 
-      // 1️⃣ Check in citizens table
+      // Checking citizen table
       const { data: citizen, error: citizenError } = await supabase
         .from('citizens')
         .select('*')
@@ -101,9 +114,18 @@ function SignUpScreen() {
         return;
       }
 
-      // 2️⃣ Create user in auth.users
+      // Choosing email (real or fake)
+      const signupEmail = form.email?.trim() !== ""
+        ? form.email.trim()
+        : `user${form.idNumber}@gmail.com`;
+
+      // Creating user in auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+<<<<<<< Updated upstream
         email: fakeEmail,
+=======
+        email: signupEmail,
+>>>>>>> Stashed changes
         password: form.password,
         options: {
           data: {
@@ -112,14 +134,18 @@ function SignUpScreen() {
             idNumber: isID ? form.idNumber : null,
             passportNo: !isID ? form.idNumber : null,
             phone: form.phone,
+<<<<<<< Updated upstream
             email: form.email,
+=======
+            realEmail: form.email || null, // store separately if optional
+>>>>>>> Stashed changes
           },
         },
       });
 
       if (signUpError) throw signUpError;
 
-      // 3️⃣ Insert into public.users
+      // Inserting into users table
       if (signUpData.user) {
         const { error: insertError } = await supabase
           .from('users')
@@ -128,7 +154,12 @@ function SignUpScreen() {
             national_id_no: isID ? form.idNumber : null,
             passport_no: !isID ? form.idNumber : null,
             phone: form.phone,
+<<<<<<< Updated upstream
             email: form.email,
+=======
+            email: signupEmail,      // store the chosen email
+            real_email: form.email || null, // keep track of real email if given
+>>>>>>> Stashed changes
           }]);
 
         if (insertError) {
@@ -148,6 +179,7 @@ function SignUpScreen() {
       setLoading(false);
     }
   };
+
 
   return (
 
@@ -238,7 +270,11 @@ function SignUpScreen() {
         <button
           onClick={handleRegister}
           disabled={loading}
+<<<<<<< Updated upstream
           className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+=======
+          className={`w-full py-3 rounded-2xl text-white font-semibold justify-center align-middle transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+>>>>>>> Stashed changes
             }`}
         >
           {loading ? 'Registering...' : 'Register'}
