@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import MainHeader from "../components/mainHeader";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../Authentication/supabaseconfig";
+import { Menubar } from "radix-ui";
+import {
+	CheckIcon,
+	ChevronRightIcon,
+	DotFilledIcon,
+} from "@radix-ui/react-icons";
+import "./radixStyles.css";
 
 type DocumentStatus = "Verified" | "Pending" | "Not verified" | "Fraud detected";
 
@@ -125,6 +132,34 @@ export default function Home() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+
+        {/* filter file status */}
+        <Menubar.Root className="MenubarRoot">
+          <Menubar.Menu>
+            <Menubar.Trigger className="MenubarTrigger">Filter</Menubar.Trigger>
+            <Menubar.Portal>
+              <Menubar.Content
+                className="MenubarContent"
+                align="start"
+                sideOffset={5}
+                alignOffset={-3}
+              >
+                <Menubar.Item className="MenubarItem">
+                  Pending
+                </Menubar.Item>
+                <Menubar.Item className="MenubarItem">
+                  Verified 
+                </Menubar.Item>
+                <Menubar.Item className="MenubarItem">
+                  Rejected
+                </Menubar.Item>
+              </Menubar.Content>
+            </Menubar.Portal>
+          </Menubar.Menu>
+        </Menubar.Root>
+
+
+
         <button
           className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition shadow"
           onClick={handleUploadClick}
