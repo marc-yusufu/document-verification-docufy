@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams } from "react-router-dom";
 
 type Props = {
     title?: string;
@@ -17,6 +18,28 @@ type Props = {
     onReassign?: () => void;
     onCancel?: () => void;
 };
+
+interface Docs {
+
+  fileName: string
+  fileType: string
+  filePath: string
+  fileUrl: string
+  status: string
+  uploadedAt: Date
+
+  //supabase
+  document_id: string
+  file_name: string
+  type: string
+  url: string
+  file_path: string;
+  submitted_at: Date
+  submittedBy: string;
+  code_id: string;
+  doc_type: string;
+
+}
 
 export default function RightDetailsPanel({
     title,
@@ -55,6 +78,34 @@ export default function RightDetailsPanel({
     const valueStyle: React.CSSProperties = { fontSize: 14, marginBottom: 8 };
 
     const displayTitle = title ?? "Details Panel";
+
+    const {code_id} = useParams<{code_id : string}>()
+    //to Reject the document
+    const RejectDoc = async (): Promise<boolean> => {
+        //setLoading(true);
+        try {
+        const res = await fetch(
+            `http://localhost:5000/documents/${code_id}/reject`,
+            {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ comment }),
+            }
+        );
+        console.log("Response: ", res);
+
+        if (!res.ok) throw new Error("Failed to update status");
+
+        //console.log("Status updated:", updatedDoc.status);
+        window.alert("Document Rejected")
+        return true; //operation success
+
+        } catch (err) {
+        console.error("Error updating status:", err);
+        alert("Could not update status");
+        return false;
+        }
+    };
 
     return (
         <aside style={panelStyle}>
@@ -148,7 +199,12 @@ export default function RightDetailsPanel({
                 </button>
 
                 <button
-                    onClick={() => onReject && onReject(comment)}
+                    onClick={ async () => {
+                        if(onReject){
+                            const success = await RejectDoc();
+                            if(success) onReject(comment);
+                        }
+                    }}
                     disabled={rejectDisabled ?? !editable}
                     style={{
                         flex: 1,
@@ -201,3 +257,5 @@ export default function RightDetailsPanel({
         </aside>
     );
 }
+
+

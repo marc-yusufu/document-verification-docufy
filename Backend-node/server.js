@@ -323,6 +323,49 @@ app.post("/documents/:code_id/approve", async (req, res) => {
 });
 
 
+//Admin rejects document
+app.post("/documents/:code_id/reject", async (req, res) => {
+  const { code_id } = req.params;
+  const { comment } = req.body;
+  try {
+    //Fetch the raw document metadata
+    console.log("1. Fetching document for code_id:", code_id); //1
+    const { data: doc, error: fetchError } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("code_id", code_id)
+      .single();
+
+    if (fetchError || !doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    //update status in raw documents table
+    const {data: updatedDoc, error: updateError} = await supabase
+      .from("documents")
+      .update({ 
+        status: "Rejected",
+        comment: comment,
+      })
+      .eq("document_id", doc.document_id)
+      .select()
+      .single();
+
+    if(updateError) throw updateError;
+
+    res.json({ 
+      message: "Document rejected!", 
+      updatedDoc, 
+    });
+
+  } catch (err) {
+    console.error("Rejection error:", err);
+    res.status(500).json({ error: "Failed to reject document" });
+    console.error("Detailed error at step:", err.message);
+    console.error("Error stack:", err.stack);
+    res.status(500).json({ error: "Failed to reject document", details: err.message });
+  }
+});
 
 
 
