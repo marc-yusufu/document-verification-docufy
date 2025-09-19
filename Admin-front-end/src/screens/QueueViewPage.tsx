@@ -27,23 +27,6 @@ interface Docs {
 
 }
 
-        /*
-  {
-    document_id: '54e179b8-8f5e-4975-ae43-2dcdf0d0d507',
-    user_id: 'fa64554c-1462-4964-8ef4-d929086b9f3e',
-    type: 'Proof of Identity',
-    file_url: 'fa64554c-1462-4964-8ef4-d929086b9f3e/1756932029384_edit.pdf',
-    status: 'pending',
-    department_assigned: null,
-    verified_by: null,
-    rejected_reason: null,
-    signed_file_url: null,
-    submitted_at: '2025-09-03T20:40:30.466+00:00',
-    verified_at: null,
-    branch_assigned: null,
-    doc_type: null
-  }
-        */
 
 type Props = {
   doc: Document;
@@ -90,11 +73,10 @@ export default function QueueViewPage() {
   
   const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
 
-  //to update the status of the document
-  const ApproveDoc = async () => {
+  //to Approve of the document
+  const ApproveDoc = async (): Promise<boolean> => {
     //setLoading(true);
     try {
-      let stampText;
       const res = await fetch(
         `http://localhost:5000/documents/${code_id}/approve`,
         {
@@ -106,20 +88,20 @@ export default function QueueViewPage() {
       console.log("Response: ", res);
 
       if (!res.ok) throw new Error("Failed to update status");
+
       const updatedDoc = await res.json();
 
       setDisplayDoc(updatedDoc); // Update local state so UI refreshes
       console.log("Status updated:", updatedDoc.status);
       window.alert("Document status updated")
+      return true; //operation success
 
     } catch (err) {
       console.error("Error updating status:", err);
       alert("Could not update status");
-    } finally {
-      //setLoading(false);
+      return false;
     }
   };
-
 
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh", overflow: "hidden" },
@@ -186,9 +168,16 @@ export default function QueueViewPage() {
             submittedOn={displayDoc? new Date(displayDoc.submitted_at).toDateString() : ""}
             status={displayDoc?.status || ""}
             commentMaxLength={120}
-            onApprove={ApproveDoc}
-            onReject={ApproveDoc}
-            onReassign={() => alert("Reassigned")}
+            onApprove={async()=>{
+              const success = await ApproveDoc();
+              if(success){
+                navigate("/queue");
+              }
+            }}
+            onReject={async()=>{
+              navigate("/queue");
+            }}
+            onReassign={() => {alert("This document will be reassigned to a different Admin"); navigate("/queue");}}
             onCancel={() => navigate("/queue")}
             approveDisabled={loadingAction}
             rejectDisabled={loadingAction}
