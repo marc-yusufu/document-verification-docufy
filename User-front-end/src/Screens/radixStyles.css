@@ -13,10 +13,10 @@ button {
 	border-radius: 6px;
     border: 1px solid lightgray;
     border-radius: 9999px;;
-    padding-left: 1.5rem /* 24px */;
-    padding-right: 1.5rem;
-    padding-top: 0.5rem /* 8px */;
-    padding-bottom: 0.5rem 
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px; 
 }
 
 .MenubarTrigger {
@@ -60,7 +60,7 @@ button {
 	all: unset;
 	font-size: 13px;
 	line-height: 1;
-	color: var(--violet-11);
+	color: blue;
 	border-radius: 4px;
 	display: flex;
 	align-items: center;
