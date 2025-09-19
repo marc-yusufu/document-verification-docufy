@@ -42,8 +42,13 @@ function SignUpScreen() {
     const { name, surname, idNumber, phone, email, password, confirmPassword } = form;
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     if (!name || !surname || !idNumber || !phone || !email || !password || !confirmPassword)
       return 'Please fill in all fields.';
+=======
+    if (!name || !surname || !idNumber || !phone || !password || !confirmPassword)
+      return 'Please fill in all required fields.';
+>>>>>>> Stashed changes
 =======
     if (!name || !surname || !idNumber || !phone || !password || !confirmPassword)
       return 'Please fill in all required fields.';
@@ -60,7 +65,11 @@ function SignUpScreen() {
       return 'Invalid phone number.';
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+=======
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+>>>>>>> Stashed changes
 =======
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
 >>>>>>> Stashed changes
@@ -88,7 +97,10 @@ function SignUpScreen() {
 
     try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const fakeEmail = `user${form.idNumber}@gmail.com`;
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
       const isID = /^\d{13}$/.test(form.idNumber);
@@ -122,7 +134,11 @@ function SignUpScreen() {
       // Creating user in auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         email: fakeEmail,
+=======
+        email: signupEmail,
+>>>>>>> Stashed changes
 =======
         email: signupEmail,
 >>>>>>> Stashed changes
@@ -135,7 +151,11 @@ function SignUpScreen() {
             passportNo: !isID ? form.idNumber : null,
             phone: form.phone,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             email: form.email,
+=======
+            realEmail: form.email || null, // store separately if optional
+>>>>>>> Stashed changes
 =======
             realEmail: form.email || null, // store separately if optional
 >>>>>>> Stashed changes
@@ -155,7 +175,12 @@ function SignUpScreen() {
             passport_no: !isID ? form.idNumber : null,
             phone: form.phone,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             email: form.email,
+=======
+            email: signupEmail,      // store the chosen email
+            real_email: form.email || null, // keep track of real email if given
+>>>>>>> Stashed changes
 =======
             email: signupEmail,      // store the chosen email
             real_email: form.email || null, // keep track of real email if given
@@ -271,7 +296,11 @@ function SignUpScreen() {
           onClick={handleRegister}
           disabled={loading}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+=======
+          className={`w-full py-3 rounded-2xl text-white font-semibold justify-center align-middle transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+>>>>>>> Stashed changes
 =======
           className={`w-full py-3 rounded-2xl text-white font-semibold justify-center align-middle transition ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
 >>>>>>> Stashed changes

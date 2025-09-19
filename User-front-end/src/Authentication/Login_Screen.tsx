@@ -77,6 +77,10 @@ function LoginScreen() {
     <div className="flex h-screen w-full font-sans overflow-hidden">
       <div className="w-full md:w-1/2 flex flex-col justify-center px-12 py-10 bg-white z-10">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+        {/* Top bar with logo + links */}
+>>>>>>> Stashed changes
 =======
         {/* Top bar with logo + links */}
 >>>>>>> Stashed changes
@@ -89,8 +93,14 @@ function LoginScreen() {
             <Link to="/about" className="hover:underline">About</Link>
           </div>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         </div>
 
+=======
+        </div>
+
+        {/* Heading */}
+>>>>>>> Stashed changes
         <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
         <p className="mb-6 text-gray-700">
           Don't have an account?{' '}
@@ -99,6 +109,7 @@ function LoginScreen() {
           </Link>
         </p>
 
+<<<<<<< Updated upstream
         {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
 
         <input
@@ -136,6 +147,11 @@ function LoginScreen() {
         {/* Error message */}
         {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
 
+=======
+        {/* Error message */}
+        {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
+
+>>>>>>> Stashed changes
         {/* Identifier */}
         <input
           name="identifier"
@@ -187,6 +203,9 @@ function LoginScreen() {
           className={`w-full py-3 rounded-2xl text-white font-semibold transition ${loading
             ? 'bg-blue-400 cursor-not-allowed'
             : 'bg-blue-600 hover:bg-blue-700'
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             }`}
         >
@@ -195,6 +214,10 @@ function LoginScreen() {
       </div>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+      {/* Right half gradient */}
+>>>>>>> Stashed changes
 =======
       {/* Right half gradient */}
 >>>>>>> Stashed changes

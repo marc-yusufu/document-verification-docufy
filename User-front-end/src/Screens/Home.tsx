@@ -6,7 +6,10 @@ import DocumentPreview from "../components/DocumentPreview";
 import ProgressTracker from "../components/ProgressTracker";
 import DocumentCard from "../components/DocumentCard";
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 import { Menubar } from "radix-ui"; // keep whatever you already use; adjust if you use @radix-ui/react-menubar
 import "./radixStyles.css";
 >>>>>>> Stashed changes
@@ -21,9 +24,13 @@ export interface Document {
   signed_url?: string;
   submitted_at?: string;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   branch?: string;
   submitted_by?: string;
   comments?: string;
+=======
+  signed_file_url?: string;
+>>>>>>> Stashed changes
 =======
   signed_file_url?: string;
 >>>>>>> Stashed changes
@@ -39,6 +46,7 @@ const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
   "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -63,10 +71,25 @@ export default function Home(): JSX.Element {
 
   // Fetch documents and build signed URLs
 >>>>>>> Stashed changes
+=======
+export default function Home(): JSX.Element {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<DocumentStatus | "All">("All");
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isTracking, setIsTracking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Fetch documents and build signed URLs
+>>>>>>> Stashed changes
   useEffect(() => {
     let mounted = true;
     const fetchDocs = async () => {
       setLoading(true);
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       const { data, error } = await supabase
         .from("documents")
@@ -75,6 +98,8 @@ export default function Home(): JSX.Element {
         )
         .order("submitted_at", { ascending: false });
 =======
+=======
+>>>>>>> Stashed changes
       setError(null);
       try {
         const { data, error: fetchError } = await supabase
@@ -83,10 +108,16 @@ export default function Home(): JSX.Element {
             "document_id, file_name, type, file_path, status, submitted_at, signed_file_url"
           )
           .order("submitted_at", { ascending: false });
+<<<<<<< Updated upstream
 
         if (fetchError) throw fetchError;
 >>>>>>> Stashed changes
 
+=======
+
+        if (fetchError) throw fetchError;
+
+>>>>>>> Stashed changes
         const rows = (data ?? []) as any[];
 
         // create signed URLs for docs with file_path
@@ -134,6 +165,7 @@ export default function Home(): JSX.Element {
         if (mounted) setLoading(false);
       }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
       const withUrls = await Promise.all(
         (data ?? []).map(async (doc: any) => {
@@ -155,6 +187,8 @@ export default function Home(): JSX.Element {
       if (withUrls.length > 0) setSelectedDoc(withUrls[0] as Document);
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     };
 
     fetchDocs();
@@ -163,6 +197,7 @@ export default function Home(): JSX.Element {
     };
   }, []);
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
   const filteredDocs = documents.filter((d) =>
     d.type.toLowerCase().includes(query.toLowerCase())
@@ -202,6 +237,30 @@ export default function Home(): JSX.Element {
   }, [pendingDoc, isTracking]);
 
 >>>>>>> Stashed changes
+=======
+  // Filter + search
+  const filteredDocs = documents.filter((d) => {
+    const matchesSearch = query.trim() === "" ? true : (d.type ?? d.file_name ?? "").toLowerCase().includes(query.toLowerCase());
+    const matchesFilter = filter === "All" ? true : d.status === filter;
+    return matchesSearch && matchesFilter;
+  });
+
+  // Pending doc for tracker (first pending)
+  const pendingDoc = documents.find((d) => d.status === "Pending");
+
+  // Simulated progress when tracking
+  useEffect(() => {
+    if (!pendingDoc || !isTracking) return;
+    const id = setInterval(() => {
+      setProgress((p) => {
+        const next = p + Math.floor(Math.random() * 12) + 3; // ensure progress
+        return next >= 100 ? 100 : next;
+      });
+    }, 700);
+    return () => clearInterval(id);
+  }, [pendingDoc, isTracking]);
+
+>>>>>>> Stashed changes
   const startTracking = () => {
     setProgress(0);
     setIsTracking(true);
@@ -218,7 +277,11 @@ export default function Home(): JSX.Element {
       <MainHeader />
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       {/* Search & Upload row */}
+=======
+      {/* Search + Filter + Upload */}
+>>>>>>> Stashed changes
 =======
       {/* Search + Filter + Upload */}
 >>>>>>> Stashed changes
@@ -254,6 +317,9 @@ export default function Home(): JSX.Element {
           </Menubar.Menu>
         </Menubar.Root>
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         <button
           onClick={handleUploadClick}
@@ -264,6 +330,7 @@ export default function Home(): JSX.Element {
       </div>
 
       <div className="flex gap-6">
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         {/* Left big white workspace */}
         <div className="flex-1">
@@ -287,6 +354,8 @@ export default function Home(): JSX.Element {
                     statusStyles={statusStyles}
                   />
 =======
+=======
+>>>>>>> Stashed changes
         {/* LEFT: document cards grid */}
         <div className="flex-1">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 min-h-[520px]">
@@ -336,6 +405,9 @@ export default function Home(): JSX.Element {
                       </button>
                     </div>
                   </div>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 ))
               )}
@@ -344,9 +416,15 @@ export default function Home(): JSX.Element {
         </div>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         {/* Right column: top Progress + bottom Document preview */}
         <div className="w-[360px] flex flex-col gap-6">
           {/* Progress box */}
+=======
+        {/* RIGHT: progress (top) + preview (bottom) */}
+        <div className="w-[360px] flex flex-col gap-6">
+          {/* Progress Tracker box */}
+>>>>>>> Stashed changes
 =======
         {/* RIGHT: progress (top) + preview (bottom) */}
         <div className="w-[360px] flex flex-col gap-6">
@@ -368,10 +446,14 @@ export default function Home(): JSX.Element {
                   <div className="mt-3">
                     <div className="w-full bg-blue-100 h-2 rounded-full">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                       <div
                         className="bg-blue-600 h-2 rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
+=======
+                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+>>>>>>> Stashed changes
 =======
                       <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
 >>>>>>> Stashed changes
@@ -382,10 +464,14 @@ export default function Home(): JSX.Element {
                     </div>
                     {!isTracking && (
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                       <button
                         onClick={startTracking}
                         className="mt-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs"
                       >
+=======
+                      <button onClick={startTracking} className="mt-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
+>>>>>>> Stashed changes
 =======
                       <button onClick={startTracking} className="mt-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs">
 >>>>>>> Stashed changes
@@ -401,8 +487,13 @@ export default function Home(): JSX.Element {
           </div>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           {/* Document preview */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+=======
+          {/* Preview box */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 min-h-[240px]">
+>>>>>>> Stashed changes
 =======
           {/* Preview box */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 min-h-[240px]">
