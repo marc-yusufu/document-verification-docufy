@@ -17,6 +17,7 @@ import QueueViewPage from "./screens/QueueViewPage";
 import SettingsPage from "./screens/SettingsPage";
 import Layout from "./Layout";
 
+
 // Private Route Component
 import { Navigate, Outlet } from "react-router-dom";
 

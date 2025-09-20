@@ -101,10 +101,10 @@ export default function DashboardPage() {
   useEffect(() => {
     async function getAllDocs(){
       try{
-        const res = await fetch(`http://localhost:5000/documents?status=approved,rejected`)
+        const res = await fetch(`http://localhost:5000/documents?status=Approved,Rejected`)
         const countPending = await fetch(`http://localhost:5000/documents?status=pending`)
-        const countVerified = await fetch(`http://localhost:5000/documents?status=approved`)
-        const countRejected = await fetch(`http://localhost:5000/documents?status=rejected`)
+        const countVerified = await fetch(`http://localhost:5000/documents?status=Approved`)
+        const countRejected = await fetch(`http://localhost:5000/documents?status=Rejected`)
         const docs = await res.json()
         const countDocsPending = await countPending.json()
         const countDocsVerified = await countVerified.json()

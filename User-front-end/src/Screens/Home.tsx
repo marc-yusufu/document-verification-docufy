@@ -168,7 +168,7 @@ export default function Home() {
                 </Menubar.Item>
                 <Menubar.Item 
                   className={`MenubarItem ${filter === "Rejected" ? "bg-gray-200" : ""}`}
-                  onSelect={()=> setFilter("rejected")}>
+                  onSelect={()=> setFilter("Rejected")}>
                   Rejected
                 </Menubar.Item>
               </Menubar.Content>

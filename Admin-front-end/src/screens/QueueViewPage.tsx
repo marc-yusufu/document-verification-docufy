@@ -5,6 +5,8 @@ import TopPanel from "../components/TopPanel";
 import RightDetailsPanel from "../components/RightDetailsPanel";
 import { supabase } from "../Authentication/supabaseconfig";
 
+import { useComment } from "../context/context";
+
 interface Docs {
 
   fileName: string
@@ -27,6 +29,11 @@ interface Docs {
 
 }
 
+interface Stamp {
+  state: string;
+  by: string;
+  date: string;
+}
 
 type Props = {
   doc: Document;
@@ -38,8 +45,13 @@ export default function QueueViewPage() {
   const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
   const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
   const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
+  
+  const paragraph = "state: Verified and Certified \nBy: Admin Marc Yusufu. \nThis document is Valid. \nDate: 19th September 2025"
+
   const navigate = useNavigate();
 
+  //const {commentText} = useComment();
+  //const comment = commentText;
 
   const {code_id} = useParams<{code_id : string}>()
   
@@ -82,7 +94,7 @@ export default function QueueViewPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stampText: "APPROVED" }),
+          body: JSON.stringify({ stampText: paragraph}),
         }
       );
       console.log("Response: ", res);
@@ -101,6 +113,33 @@ export default function QueueViewPage() {
       alert("Could not update status");
       return false;
     }
+  };
+
+  //to Reject the document
+  const RejectDoc = async (): Promise<boolean> => {
+      //setLoading(true);
+      try {
+      const res = await fetch(
+          `http://localhost:5000/documents/${code_id}/reject`,
+          {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ staus : "Rejected" }),
+          }
+      );
+      console.log("Response: ", res);
+
+      if (!res.ok) throw new Error("Failed to update status");
+
+      //console.log("Status updated:", updatedDoc.status);
+      window.alert("Document Rejected")
+      return true; //operation success
+
+      } catch (err) {
+      console.error("Error updating status:", err);
+      alert("Could not update status");
+      return false;
+      }
   };
 
   const styles: { [key: string]: React.CSSProperties } = {
@@ -175,6 +214,10 @@ export default function QueueViewPage() {
               }
             }}
             onReject={async()=>{
+              const success = await RejectDoc();
+              if(success){
+
+              }
               navigate("/queue");
             }}
             onReassign={() => {alert("This document will be reassigned to a different Admin"); navigate("/queue");}}
