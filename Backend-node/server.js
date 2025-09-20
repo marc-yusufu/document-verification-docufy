@@ -345,7 +345,6 @@ app.post("/documents/:code_id/reject", async (req, res) => {
       .from("documents")
       .update({ 
         status: "Rejected",
-        comment: comment,
       })
       .eq("document_id", doc.document_id)
       .select()

@@ -237,7 +237,7 @@ export default function DocumentUpload() {
                 p-2 cursor-pointer hover:bg-blue-800 transform
                 transition-transform duration-300 hover:scale-105
                 shadow-md ease-out active:scale-95 active:translate-y-0.5
-                hover:shadow-lg"
+                hover:shadow-lg items-center"
                 >
                     Upload
                 </button>

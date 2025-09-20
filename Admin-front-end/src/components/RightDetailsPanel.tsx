@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+
 
 type Props = {
     title?: string;
@@ -79,33 +79,6 @@ export default function RightDetailsPanel({
 
     const displayTitle = title ?? "Details Panel";
 
-    const {code_id} = useParams<{code_id : string}>()
-    //to Reject the document
-    const RejectDoc = async (): Promise<boolean> => {
-        //setLoading(true);
-        try {
-        const res = await fetch(
-            `http://localhost:5000/documents/${code_id}/reject`,
-            {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ comment }),
-            }
-        );
-        console.log("Response: ", res);
-
-        if (!res.ok) throw new Error("Failed to update status");
-
-        //console.log("Status updated:", updatedDoc.status);
-        window.alert("Document Rejected")
-        return true; //operation success
-
-        } catch (err) {
-        console.error("Error updating status:", err);
-        alert("Could not update status");
-        return false;
-        }
-    };
 
     return (
         <aside style={panelStyle}>
@@ -199,12 +172,7 @@ export default function RightDetailsPanel({
                 </button>
 
                 <button
-                    onClick={ async () => {
-                        if(onReject){
-                            const success = await RejectDoc();
-                            if(success) onReject(comment);
-                        }
-                    }}
+                    onClick={ async () => onReject && onReject(comment)}
                     disabled={rejectDisabled ?? !editable}
                     style={{
                         flex: 1,

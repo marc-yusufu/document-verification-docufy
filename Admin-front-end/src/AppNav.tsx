@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { RejectedCommentProvider } from "./context/context";
 
 // Pages
 import DashboardPage from "./screens/DashboardPage";
@@ -19,5 +20,6 @@ export default function AppNav() {
             <Route path="/verified" element={<VerifiedPage />} />
             <Route path="/verifiedView" element={<VerifiedViewPage />} />
         </Routes>
+
     );
 }
