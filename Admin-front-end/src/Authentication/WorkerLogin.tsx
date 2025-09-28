@@ -81,9 +81,7 @@ function WorkerLogin() {
                         <img src={logo} alt="Logo" className="worker-login-logo" />
                     </Link>
                     <div className="worker-login-links">
-                        <Link to="/register" className="worker-login-link">
-                            Register Worker
-                        </Link>
+
                         <Link to="/forgot-password" className="worker-login-link">
                             Forgot Password
                         </Link>
@@ -117,7 +115,18 @@ function WorkerLogin() {
                     {loading ? 'Logging in...' : 'Login'}
                 </button>
             </div>
-            <div className="worker-login-right"></div>
+            <div className="worker-login-right">
+                <div className='flex justify-center items-center h-full w-full flex-col'>
+                    <p className='text-white font-bold text-[28px]'>Don't have an account?</p>
+                    <p className='text-white text-[16px] p-5'>Register as a worker</p>
+                    <Link to="/register">
+                        <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
+                            Register
+                        </button>
+                    </Link>
+
+                </div>
+            </div>
         </div>
     );
 }
