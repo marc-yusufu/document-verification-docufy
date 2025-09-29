@@ -226,16 +226,16 @@ function SignUpScreen() {
         </div>
 
         <div className="hidden  md:block w-1/2 bg-blue-600 rounded-e-[25px] shadow-2xl">
-          <div className='flex justify-center items-center h-full w-full flex-col'>
-              <p className='text-white font-bold text-[28px]'>Already have an account?</p>
-              <p className='text-white text-[16px] p-5'>Login to your account.</p>
-              <Link to="/login">
-                  <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
-                    Login
-                </button>
-              </Link>
+        <div className='flex justify-center items-center h-full w-full flex-col'>
+            <p className='text-white font-bold text-[28px]'>Already have an account?</p>
+            <p className='text-white text-[16px] p-5'>Login to your account.</p>
+            <Link to="/login">
+                <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
+                  Login
+              </button>
+            </Link>
 
-          </div>
+        </div>
 
         </div>
       </div>
