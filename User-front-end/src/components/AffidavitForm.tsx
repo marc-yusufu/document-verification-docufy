@@ -33,7 +33,11 @@ export default function AffidavitForm({ onSubmit, loading }: AffidavitFormProps)
         });
 
         const img = new Image();
+<<<<<<< Updated upstream
         img.src = "/affidavit-form.png"; // image must be inside public/
+=======
+        img.src = "../../public/affidavit-form.png"; // image must be inside public/
+>>>>>>> Stashed changes
 
         return new Promise((resolve) => {
             img.onload = () => {

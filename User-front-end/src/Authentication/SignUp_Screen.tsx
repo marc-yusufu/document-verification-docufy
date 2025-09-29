@@ -222,6 +222,7 @@ function SignUpScreen() {
           </div>
         </div>
 
+<<<<<<< Updated upstream
         <h2 className="text-3xl font-bold mb-2">Create new account.</h2>
         <p className="mb-6 text-gray-700">
           Already have an account?{' '}
@@ -231,6 +232,19 @@ function SignUpScreen() {
         </p>
 
         {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
+=======
+        <div className="hidden  md:block w-1/2 bg-blue-600 rounded-e-[25px] shadow-2xl">
+        <div className='flex justify-center items-center h-full w-full flex-col'>
+            <p className='text-white font-bold text-[28px]'>Already have an account?</p>
+            <p className='text-white text-[16px] p-5'>Login to your account.</p>
+            <Link to="/login">
+                <button className="p-2 w-[100px] transition bg-blue-600 rounded-2xl border-2 border-white text-white font-bold hover:bg-blue-800">
+                  Login
+              </button>
+            </Link>
+
+        </div>
+>>>>>>> Stashed changes
 
         <div className="flex gap-4 mb-4">
           <input

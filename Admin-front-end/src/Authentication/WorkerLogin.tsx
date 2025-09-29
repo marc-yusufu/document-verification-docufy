@@ -146,8 +146,17 @@ function WorkerLogin() {
                 <div className="worker-login-header">
                     <Link to="/"><img src={logo} alt="Logo" className="worker-login-logo" /></Link>
                     <div className="worker-login-links">
+<<<<<<< Updated upstream
                         <Link to="/register" className="worker-login-link">Register Worker</Link>
                         <Link to="/forgot-password" className="worker-login-link">Forgot Password</Link>
+=======
+                        <Link to="/register" className="worker-login-link">
+                            Register Worker
+                        </Link>
+                        <Link to="/forgot-password" className="worker-login-link">
+                            Forgot Password
+                        </Link>
+>>>>>>> Stashed changes
                     </div>
                 </div>
 
@@ -178,6 +187,7 @@ function WorkerLogin() {
                     {loading ? 'Logging in...' : 'Login'}
                 </button>
             </div>
+<<<<<<< Updated upstream
 
             <div className="worker-login-right"></div>
 
@@ -187,6 +197,9 @@ function WorkerLogin() {
                 onVerify={handleVerify2FA}
                 onResend={handleResend2FA}
             />
+=======
+            <div className="worker-login-right"></div>
+>>>>>>> Stashed changes
         </div>
     );
 }
