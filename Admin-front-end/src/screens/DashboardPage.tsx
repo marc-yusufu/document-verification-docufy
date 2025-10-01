@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import {
-  MdFilterList,
   MdInfo,
-  MdPrint,
-  MdDownload,
   MdCancel,
   MdCheckCircle,
 } from "react-icons/md";
+import { FiArrowUpRight, FiArrowDownRight } from "react-icons/fi";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
 import { supabase } from "../Authentication/supabaseconfig";
+import { Line } from "react-chartjs-2";
+import 'chart.js/auto';
 
-// Define shape of recent activity
 interface RecentActivity {
   id: string;
   admin_id: string;
@@ -24,71 +23,119 @@ interface RecentActivity {
 
 interface Docs {
   id: string | number;
-  fileName: string
-  fileType: string
-  filePath: string
-  fileUrl: string
-  status: string
-  uploadedAt: Date
-
+  fileName: string;
+  fileType: string;
+  filePath: string;
+  fileUrl: string;
+  status: string;
+  uploadedAt: string;
 }
 
-export default function DashboardPage() {
+const DashboardPage: React.FC = () => {
   const [activity, setActivity] = useState<RecentActivity[]>([]);
-  const [pendingCount, setPendingCount] = useState([]);
-  const [verifiedCount, setVerifiedCount] = useState([]);
-  const [rejectedCount, setRejectedCount] = useState([]);
-
   const [docs, setDocs] = useState<Docs[]>([]);
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    avgVerificationTime: 0,
+  });
+  const [trendData, setTrendData] = useState<{ dates: string[]; counts: number[] }>({ dates: [], counts: [] });
 
+  // Map color names to Tailwind classes
+  const colorMap: Record<string, string> = {
+    yellow: "text-yellow-500",
+    green: "text-green-500",
+    red: "text-red-500",
+    blue: "text-blue-500",
+  };
 
+  // --- Fetch Quick Stats ---
+  const fetchStats = async () => {
+    try {
+      const pendingRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "pending");
+      const approvedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "approved");
+      const rejectedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "rejected");
 
-  ////fetching data directly from the frontend
-  useEffect(() => {
-    async function fetchActivity() {
-      // Fetch recent activity logs
+      const avgTime = 136; // placeholder, replace with real calculation
+
+      setStats({
+        pending: pendingRes.count || 0,
+        approved: approvedRes.count || 0,
+        rejected: rejectedRes.count || 0,
+        avgVerificationTime: avgTime,
+      });
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    }
+  };
+
+  // --- Fetch Recent Activity ---
+  const fetchActivity = async () => {
+    try {
       const { data, error } = await supabase
         .from("recent_activity")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
-
-      if (error) {
-        console.error("Error fetching activity:", error);
-      } else {
-        setActivity(data || []);
-      }
-
-      // Count docs by status
-      const { count: pending } = await supabase
-        .from("recent_activity")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      const { count: verified } = await supabase
-        .from("recent_activity")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "approved");
-
-      const { count: rejected } = await supabase
-        .from("recent_activity")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "rejected");
+      if (error) console.error(error);
+      else setActivity(data || []);
+    } catch (err) {
+      console.error(err);
     }
+  };
 
-    fetchActivity();
-  }, []);
+  // --- Fetch Recent Docs ---
+  const fetchDocs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("documents")
+        .select("*")
+        .order("uploadedAt", { ascending: false })
+        .limit(5);
+      if (error) console.error(error);
+      else setDocs(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
+  // --- Fetch Trend Data ---
+  const fetchTrends = async () => {
+    try {
+      const { data } = await supabase
+        .from("recent_activity")
+        .select("created_at")
+        .order("created_at", { ascending: true });
+      if (!data) return;
+
+      const dateMap: Record<string, number> = {};
+      data.forEach((item) => {
+        const date = new Date(item.created_at).toLocaleDateString();
+        dateMap[date] = (dateMap[date] || 0) + 1;
+      });
+
+      setTrendData({ dates: Object.keys(dateMap), counts: Object.values(dateMap) });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // --- Realtime subscription ---
   useEffect(() => {
+    fetchStats();
+    fetchActivity();
+    fetchDocs();
+    fetchTrends();
+
     const channel = supabase
       .channel("recent_activity_changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "recent_activity" },
-        (payload) => {
-          setActivity((prev) => [payload.new as RecentActivity, ...prev].slice(0, 10));
-        }
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "recent_activity" }, () => {
+        fetchActivity();
+        fetchStats();
+        fetchTrends();
+        fetchDocs();
+      })
       .subscribe();
 
     return () => {
@@ -96,133 +143,112 @@ export default function DashboardPage() {
     };
   }, []);
 
-
-  ///fetching data by making api call to the backend
-  useEffect(() => {
-    async function getAllDocs(){
-      try{
-        const res = await fetch(`http://localhost:5000/documents?status=Approved,Rejected`)
-        const countPending = await fetch(`http://localhost:5000/documents?status=pending`)
-        const countVerified = await fetch(`http://localhost:5000/documents?status=Approved`)
-        const countRejected = await fetch(`http://localhost:5000/documents?status=Rejected`)
-        const docs = await res.json()
-        const countDocsPending = await countPending.json()
-        const countDocsVerified = await countVerified.json()
-        const countDocsRejected = await countRejected.json()
-        console.log('Document list: ', docs) //for console while debugging
-        setDocs(docs);
-        setPendingCount(countDocsPending.length);
-        setVerifiedCount(countDocsVerified.length);
-        setRejectedCount(countDocsRejected.length);
-      }catch(err){
-        console.error("Error while fetching documents: ", err);
-      }
-    }
-    getAllDocs();
-  }, []);
-
-
-
-  return (
-    <div className="dashboard-container">
-      <Sidebar />
-      <main className="main">
-        <TopPanel />
-
-        {/* Quick Stats */}
-        <section className="quick-stats">
-          <h3>Quick Stats</h3>
-          <div className="stats-grid">
-            <div className="card">
-              <div className="card-header">Queue</div>
-              <div className="card-value">{pendingCount}</div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">Verified</div>
-              <div className="card-value">{verifiedCount}</div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">Rejected</div>
-              <div className="card-value">{rejectedCount}</div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">Avg Verification Time</div>
-              <div className="card-value">
-                136 <span className="muted">s</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Recent Activity */}
-        <section className="recent">
-          <div className="recent-header">
-            <h3>Recent Activity</h3>
-            <div className="recent-actions">
-              <button><MdFilterList /></button>
-              <button><MdInfo /></button>
-              <button><MdPrint /></button>
-              <button><MdDownload /></button>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Date &amp; Time</th>
-                <th>Action</th>
-                <th>Doc Name</th>
-                <th>Status</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activity.map((a) => (
-                <tr key={a.id}>
-                  <td>{new Date(a.created_at).toLocaleString()}</td>
-                  <td>{a.action}</td>
-                  <td>{a.doc_name || "-"}</td>
-                  <td>
-                    {a.status === "approved" && (
-                      <span className="status ok"><MdCheckCircle /></span>
-                    )}
-                    {a.status === "rejected" && (
-                      <span className="status bad"><MdCancel /></span>
-                    )}
-                    {a.status === "pending" && (
-                      <span className="status">Pending</span>
-                    )}
-                    {!a.status && "-"}
-                  </td>
-                  <td>{a.notes || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      </main>
-
-      {/* Inline CSS */}
-      <style>{`
-        .dashboard-container { display: flex; min-height: 100vh; font-family: sans-serif; background: #DEDEDE; }
-        .main { flex: 1; padding: 1.5rem; background: #DEDEDE; display: flex; flex-direction: column; gap: 1.5rem; }
-        .quick-stats h3 { font-weight: bold; margin-bottom: 1rem; }
-        .stats-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .card { background: #fff; padding: 1rem; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; min-width: 220px; }
-        .card-header { font-weight: 600; margin-bottom: 0.5rem; }
-        .card-value { font-weight: bold; font-size: 1.5rem; }
-        .recent { background: #fff; padding: 1rem; border-radius: 10px; }
-        .recent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .recent-actions button { background: none; border: none; cursor: pointer; padding: 0.3rem; border-radius: 4px; }
-        .recent-actions button:hover { background: #e5e7eb; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.5rem; border-bottom: 1px solid #ddd; text-align: left; }
-        th { color: #2563eb; font-weight: bold; }
-        .status.ok { color: #15803d; font-size: 1.2rem; }
-        .status.bad { color: #dc2626; font-size: 1.2rem; }
-      `}</style>
+  // --- Quick Stats Card Component ---
+  const QuickStatsCard = ({ title, count, icon, color, trend }: any) => (
+    <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+      <div className="flex justify-between items-center">
+        <span className="text-gray-700 font-semibold">{title}</span>
+        <div className={`${colorMap[color]} text-2xl`}>{icon}</div>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-2xl font-bold">{count}</span>
+        {trend !== undefined && (
+          <span className={`flex items-center gap-1 ${trend >= 0 ? "text-green-500" : "text-red-500"}`}>
+            {trend >= 0 ? <FiArrowUpRight /> : <FiArrowDownRight />}
+            {Math.abs(trend)}%
+          </span>
+        )}
+      </div>
     </div>
   );
-}
+
+  return (
+    <div className="flex min-h-screen font-sans bg-gray-100">
+      <Sidebar />
+      <main className="flex-1 p-6 flex flex-col gap-6">
+        <TopPanel />
+        <h2 className="text-2xl font-bold text-gray-800">Welcome back!</h2>
+
+        {/* Quick Stats */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <QuickStatsCard title="Pending" count={stats.pending} color="yellow" icon={<MdCancel />} trend={5} />
+          <QuickStatsCard title="Verified" count={stats.approved} color="green" icon={<MdCheckCircle />} trend={10} />
+          <QuickStatsCard title="Rejected" count={stats.rejected} color="red" icon={<MdCancel />} trend={-2} />
+          <QuickStatsCard title="Avg Verification Time" count={stats.avgVerificationTime} color="blue" icon={<MdInfo />} trend={-1} />
+        </section>
+
+        {/* Trend Chart */}
+        {trendData.dates.length > 0 && (
+          <section className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-2">Verification Trend</h3>
+            <Line
+              data={{
+                labels: trendData.dates,
+                datasets: [
+                  {
+                    label: "Documents Verified",
+                    data: trendData.counts,
+                    fill: true,
+                    backgroundColor: "rgba(59,130,246,0.2)",
+                    borderColor: "rgba(59,130,246,1)",
+                    tension: 0.3,
+                  },
+                ],
+              }}
+            />
+          </section>
+        )}
+
+        {/* Recent Activity + Docs */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+            <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
+            <table className="w-full min-w-[600px] text-sm border-collapse">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Date & Time</th>
+                  <th className="py-2">Action</th>
+                  <th className="py-2">Doc Name</th>
+                  <th className="py-2">Status</th>
+                  <th className="py-2">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activity.map((a) => (
+                  <tr key={a.id} className="hover:bg-gray-50">
+                    <td className="py-2">{new Date(a.created_at).toLocaleString()}</td>
+                    <td className="py-2">{a.action}</td>
+                    <td className="py-2">{a.doc_name || "-"}</td>
+                    <td className="py-2">
+                      {a.status === "approved" && <span className="text-green-600 font-bold flex items-center gap-1"><MdCheckCircle /> Approved</span>}
+                      {a.status === "rejected" && <span className="text-red-600 font-bold flex items-center gap-1"><MdCancel /> Rejected</span>}
+                      {a.status === "pending" && <span className="text-yellow-600 font-bold">Pending</span>}
+                    </td>
+                    <td className="py-2">{a.notes || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-2">Latest Documents</h3>
+            <ul className="flex flex-col gap-2">
+              {docs.map((d) => (
+                <li key={d.id} className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
+                  <span>{d.fileName}</span>
+                  <span className={`text-sm font-bold ${d.status === "approved" ? "text-green-600" : d.status === "rejected" ? "text-red-600" : "text-yellow-600"}`}>
+                    {d.status}
+                  </span>
+                  <a href={d.fileUrl} target="_blank" className="text-blue-500 hover:underline">View</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default DashboardPage;
