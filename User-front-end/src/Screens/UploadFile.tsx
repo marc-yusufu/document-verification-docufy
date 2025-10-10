@@ -4,17 +4,9 @@ import { supabase } from "../Authentication/supabaseconfig";
 import { useLocation } from "react-router-dom";
 import MainHeader from "../components/mainHeader";
 import AffidavitForm from "../components/AffidavitForm";
-import { IonIcon } from "@ionic/react";
-import {
-    filterOutline,
-    menuOutline,
-    cloudUploadOutline,
-    documentTextOutline,
-    closeOutline,
-} from "ionicons/icons";
-import { s } from "framer-motion/dist/types.d-Bq-Qm38R";
 
 const BUCKET_ID = "userDocuments";
+const MAX_FILE_BYTES = 120 * 1024 * 1024; // 120 MB
 
 interface UploadedDoc {
     document_id: string;
@@ -25,13 +17,17 @@ interface UploadedDoc {
     submitted_at: string;
     code_id?: string;
     status: string;
-
-    //submitted_by?: string | null;
     branch_assigned?: string | null;
     comments?: string | null;
-
     signed_url?: string | null;
     signed_file_url?: string | null;
+}
+
+interface Branch {
+    branch_id: string;
+    name: string;
+    latitude: number | null;
+    longitude: number | null;
 }
 
 export default function DocumentUpload(): JSX.Element {
@@ -40,27 +36,35 @@ export default function DocumentUpload(): JSX.Element {
     const [loading, setLoading] = useState(false);
     const [recentDocs, setRecentDocs] = useState<UploadedDoc[]>([]);
     const [error, setError] = useState<string>("");
+    const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+    const [nearestBranch, setNearestBranch] = useState<{ id: string; name: string; distanceKm: number } | null>(null);
+    const [locating, setLocating] = useState<boolean>(true);
+    const [locationError, setLocationError] = useState<string>("");
 
     const [previewFile, setPreviewFile] = useState<UploadedDoc | null>(null);
 
     // affidavit modal toggle
     const location = useLocation();
-    const openAffidavit = location.state?.openAffidavit;
+    const openAffidavit = (location as any).state?.openAffidavit;
     const [showAffidavit, setShowAffidavit] = useState(false);
 
-    useEffect(() => {
-        if (openAffidavit) {
-            setShowAffidavit(true); // open affidavit only after page load
-        }
-    }, [openAffidavit]);
+    // Haversine - distance in km
+    function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+        const R = 6371; // Earth radius in km
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // in km
+    }
 
-    useEffect(() => {
-        fetchRecentDocs();
-    }, []);
-
+    // Generate code
     function generateCode(length = 16): string {
-        const charset =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         let result = "";
         const randomValues = new Uint32Array(length);
         crypto.getRandomValues(randomValues);
@@ -70,60 +74,183 @@ export default function DocumentUpload(): JSX.Element {
         return result;
     }
 
-    const uploadToSupabase = useCallback(
-        async (f: File) => {
+    // Find nearest branch given coordinates
+    const findNearestBranch = useCallback(
+        async (lat: number, lon: number) => {
             try {
-                const {
-                    data: { user },
-                    error: userError,
-                } = await supabase.auth.getUser();
-                if (userError || !user) throw new Error("Not authenticated");
+                const { data: branchesData, error: branchError } = await supabase
+                    .from("branches")
+                    .select("branch_id, name, latitude, longitude");
 
-                const code = generateCode();
-                const ext = f.name.split(".").pop() ?? "bin";
-                const safeType = selectedType
-                    ? selectedType.replace(/\s+/g, "_")
-                    : "document";
-                const fileName = `${Date.now()}_${safeType}.${ext}`;
-                const filePath = `${user.id}/${fileName}`;
+                if (branchError) {
+                    console.warn("Failed to fetch branches:", branchError);
+                    setNearestBranch(null);
+                    return null;
+                }
 
-                const { error: storageError } = await supabase.storage
-                    .from(BUCKET_ID)
-                    .upload(filePath, f, { contentType: f.type, upsert: false });
-                if (storageError) throw storageError;
+                const branches = (branchesData ?? []) as Branch[];
+                if (!branches.length) {
+                    setNearestBranch(null);
+                    return null;
+                }
 
-                const insertPayload = {
-                    user_id: user.id,
-                    file_name: f.name,
-                    type: selectedType,
-                    file_path: filePath,
-                    status: "Pending",
-                    submitted_at: new Date().toISOString(),
-                    code_id: code,
-                    //submitted_by: user.email ?? null,
-                    branch_assigned: null,
-                    comments: null,
-                };
+                let best: Branch | null = null;
+                let minDist = Infinity;
 
-                const { error: insertError } = await supabase
-                    .from("documents")
-                    .insert([insertPayload]);
-                if (insertError) throw insertError;
+                for (const b of branches) {
+                    if (b.latitude == null || b.longitude == null) continue;
+                    const d = calculateDistance(lat, lon, b.latitude, b.longitude);
+                    if (d < minDist) {
+                        minDist = d;
+                        best = b;
+                    }
+                }
 
-                alert("File uploaded successfully");
-                await fetchRecentDocs();
-            } catch (err: any) {
-                console.error("Upload failed:", err);
-                alert("Upload failed: " + (err?.message ?? err));
+                if (!best) {
+                    setNearestBranch(null);
+                    return null;
+                }
+
+                const nb = { id: best.branch_id, name: best.name, distanceKm: minDist };
+                setNearestBranch(nb);
+                return nb;
+            } catch (err) {
+                console.error("findNearestBranch error:", err);
+                setNearestBranch(null);
+                return null;
             }
         },
-        [selectedType]
+        []
     );
 
+    // Request/obtain geolocation once and persist to DB (non-blocking)
+    const requestLocation = useCallback(() => {
+        if (!("geolocation" in navigator)) {
+            setLocationError("Geolocation not supported by this browser.");
+            setLocating(false);
+            return;
+        }
+
+        setLocating(true);
+        setLocationError("");
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setUserLocation({ lat: latitude, lon: longitude });
+                setLocating(false);
+                // update user's lat/lon in your users table (best-effort, non-blocking)
+                try {
+                    const { data: userData } = await supabase.auth.getUser();
+                    const user = (userData as any)?.user;
+                    if (user) {
+                        await supabase
+                            .from("users")
+                            .update({ latitude, longitude })
+                            .eq("user_id", user.id);
+                    }
+                } catch (upErr) {
+                    console.warn("Failed to persist user location:", upErr);
+                }
+
+                // set nearest branch once we have coords
+                await findNearestBranch(latitude, longitude);
+            },
+            (err) => {
+                console.warn("Geolocation error:", err);
+                setLocationError(err?.message ?? "Unable to get location. Please allow location access.");
+                setLocating(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }, [findNearestBranch]);
+
+    useEffect(() => {
+        requestLocation();
+    }, [requestLocation]);
+
+    useEffect(() => {
+        if (openAffidavit) {
+            setShowAffidavit(true);
+        }
+    }, [openAffidavit]);
+
+    useEffect(() => {
+        fetchRecentDocs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Upload & assign nearest branch
+    const uploadToSupabase = useCallback(
+        async (f: File) => {
+            if (!f) throw new Error("No file provided");
+            if (f.size > MAX_FILE_BYTES) throw new Error("File too large. Max allowed size is 120 MB.");
+
+            const { data: userData, error: userError } = await supabase.auth.getUser();
+            const user = (userData as any)?.user;
+            if (userError || !user) throw new Error("Not authenticated");
+
+            // Ensure we have user coordinates and nearest branch (try computing if missing)
+            if (!userLocation) {
+                throw new Error("Location not available. Please allow location access before uploading.");
+            }
+
+            let branchId = nearestBranch?.id ?? null;
+            if (!branchId) {
+                const computed = await findNearestBranch(userLocation.lat, userLocation.lon);
+                branchId = computed?.id ?? null;
+            }
+
+            // upload to storage
+            const code = generateCode();
+            const ext = f.name.split(".").pop() ?? "bin";
+            const safeType = selectedType ? selectedType.replace(/\s+/g, "_") : "document";
+            const fileName = `${Date.now()}_${safeType}.${ext}`;
+            const filePath = `${user.id}/${fileName}`;
+
+            const { data: uploadData, error: storageError } = await supabase.storage
+                .from(BUCKET_ID)
+                .upload(filePath, f, { contentType: f.type, cacheControl: "3600", upsert: false });
+
+            if (storageError) {
+                throw storageError;
+            }
+
+            // insert into documents table
+            const insertPayload = {
+                user_id: user.id,
+                file_name: f.name,
+                type: selectedType,
+                file_path: filePath,
+                status: "Pending",
+                submitted_at: new Date().toISOString(),
+                code_id: code,
+                branch_assigned: branchId,
+                comments: null,
+            };
+
+            const { data: insertData, error: insertError } = await supabase.from("documents").insert([insertPayload]);
+
+            if (insertError) {
+                // Attempt to clean up the uploaded file if DB insert fails
+                try {
+                    await supabase.storage.from(BUCKET_ID).remove([filePath]);
+                } catch (cleanupErr) {
+                    console.warn("Failed to remove uploaded file after DB insert error:", cleanupErr);
+                }
+                throw insertError;
+            }
+
+            return { uploaded: uploadData, inserted: insertData };
+        },
+        [selectedType, userLocation, nearestBranch, findNearestBranch]
+    );
+
+    // Fetch recent docs for preview
     async function fetchRecentDocs() {
         try {
             const { data: userData } = await supabase.auth.getUser();
-            const user = userData?.user;
+            const user = (userData as any)?.user;
             if (!user) return;
 
             const { data, error } = await supabase
@@ -140,19 +267,15 @@ export default function DocumentUpload(): JSX.Element {
                     let signed_url: string | null = null;
                     try {
                         if (doc.file_path) {
-                            const { data: signed } = await supabase.storage
+                            const { data: signed, error: signedErr } = await supabase.storage
                                 .from(BUCKET_ID)
                                 .createSignedUrl(doc.file_path, 60 * 60 * 24 * 7);
-                            signed_url = signed?.signedUrl ?? null;
+                            if (!signedErr) signed_url = (signed as any)?.signedUrl ?? null;
                         }
                     } catch {
                         signed_url = null;
                     }
-                    return {
-                        ...doc,
-                        signed_file_url: signed_url,
-                        signed_url,
-                    } as UploadedDoc;
+                    return { ...doc, signed_file_url: signed_url, signed_url } as UploadedDoc;
                 })
             );
 
@@ -165,14 +288,27 @@ export default function DocumentUpload(): JSX.Element {
 
     const handleSubmit = async () => {
         setError("");
-        if (!file && !selectedType) return setError("*Select a file and type*");
-        if (!file) return setError("*No file selected*");
-        if (!selectedType) return setError("*Select the type above*");
+        if (!file && !selectedType) {
+            setError("*Select a file and type*");
+            return;
+        }
+        if (!file) {
+            setError("*No file selected*");
+            return;
+        }
+        if (!selectedType) {
+            setError("*Select the type above*");
+            return;
+        }
+        if (!userLocation) {
+            setError("Location is required. Please allow location access so we can assign the nearest branch.");
+            return;
+        }
 
         setLoading(true);
         try {
             await uploadToSupabase(file);
-
+            // optional: send to your server for additional processing (non-blocking)
             try {
                 const formData = new FormData();
                 formData.append("file", file);
@@ -187,6 +323,11 @@ export default function DocumentUpload(): JSX.Element {
 
             setFile(null);
             setSelectedType("");
+            await fetchRecentDocs();
+            alert(`File uploaded successfully! Assigned to ${nearestBranch?.name ?? "nearest branch"}`);
+        } catch (err: any) {
+            console.error("Upload failed:", err);
+            setError("Upload failed: " + (err?.message ?? String(err)));
         } finally {
             setLoading(false);
         }
@@ -221,9 +362,7 @@ export default function DocumentUpload(): JSX.Element {
                             >
                                 <div className="flex flex-col items-center gap-4">
                                     <div className="text-4xl">⬆️</div>
-                                    <div className="text-sm text-gray-600">
-                                        Max 120 MB (PNG, JPEG, PDF)
-                                    </div>
+                                    <div className="text-sm text-gray-600">Max 120 MB (PNG, JPEG, PDF)</div>
                                     <label
                                         htmlFor="fileInput"
                                         className="inline-block mt-2 bg-blue-600 text-white px-4 py-2 rounded-full cursor-pointer hover:bg-blue-700"
@@ -239,7 +378,7 @@ export default function DocumentUpload(): JSX.Element {
                                     />
                                     {file && (
                                         <div className="mt-3 text-sm">
-                                            Selected: <b>{file.name}</b>
+                                            Selected: <b>{file.name}</b> • {(file.size / (1024 * 1024)).toFixed(2)} MB
                                         </div>
                                     )}
                                 </div>
@@ -247,6 +386,41 @@ export default function DocumentUpload(): JSX.Element {
 
                             {/* File Type */}
                             <h2 className="text-xl font-semibold mt-8 mb-4">File Type</h2>
+
+                            {/* Location / Nearest branch info */}
+                            <div className="mb-3">
+                                {locating ? (
+                                    <p className="text-sm text-gray-500">
+                                        Detecting your location...{" "}
+                                        <button
+                                            onClick={requestLocation}
+                                            className="ml-2 underline text-blue-600"
+                                            type="button"
+                                        >
+                                            Retry
+                                        </button>
+                                    </p>
+                                ) : locationError ? (
+                                    <p className="text-sm text-red-500">
+                                        Location error: {locationError}{" "}
+                                        <button
+                                            onClick={requestLocation}
+                                            className="ml-2 underline text-blue-600"
+                                            type="button"
+                                        >
+                                            Try again
+                                        </button>
+                                    </p>
+                                ) : nearestBranch ? (
+                                    <p className="text-sm text-gray-500">
+                                        Nearest branch detected: <b>{nearestBranch.name}</b> —{" "}
+                                        {nearestBranch.distanceKm.toFixed(2)} km away
+                                    </p>
+                                ) : (
+                                    <p className="text-sm text-gray-500">No branches available to assign.</p>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {[
                                     {
@@ -280,9 +454,7 @@ export default function DocumentUpload(): JSX.Element {
                                     <div
                                         key={card.label}
                                         onClick={() => setSelectedType(card.label)}
-                                        className={`relative border rounded-lg p-5 min-h-[200px] cursor-pointer ${selectedType === card.label
-                                            ? "ring-2 ring-blue-400"
-                                            : "border-gray-300"
+                                        className={`relative border rounded-lg p-5 min-h-[200px] cursor-pointer ${selectedType === card.label ? "ring-2 ring-blue-400" : "border-gray-300"
                                             }`}
                                     >
                                         <h3 className="font-medium mb-3">{card.label}</h3>
@@ -295,31 +467,33 @@ export default function DocumentUpload(): JSX.Element {
                                 ))}
                             </div>
 
-                            {error && (
-                                <div className="text-center text-red-500 italic mt-4">{error}</div>
-                            )}
+                            {error && <div className="text-center text-red-500 italic mt-4">{error}</div>}
 
                             {/* Buttons */}
-                            <div className="flex items-center justify-between mt-8  gap-6 mt-8 flex-wrap">
+                            <div className="flex items-center justify-between mt-8 gap-6 flex-wrap">
                                 <div className="flex gap-4">
                                     <button
                                         onClick={cancelUpload}
                                         className="px-6 py-2 rounded-2xl w-32 bg-red-500 text-white hover:bg-red-600"
+                                        type="button"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={loading}
-                                        className="px-6 py-2 rounded-2xl w-32 bg-blue-600 text-white hover:bg-blue-700"
+                                        disabled={loading || locating || !userLocation}
+                                        className={`px-6 py-2 rounded-2xl w-44 text-white ${loading || locating || !userLocation ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
+                                        type="button"
+                                        title={locating ? "Waiting for location..." : !userLocation ? "Location required" : ""}
                                     >
                                         {loading ? "Uploading..." : "Submit"}
                                     </button>
                                 </div>
                                 <div>
                                     <button
-                                        onClick={showAffidavit ? () => setShowAffidavit(false) : () => setShowAffidavit(true)}
+                                        onClick={() => setShowAffidavit((s) => !s)}
                                         className="px-6 py-2 rounded-2xl w-42 bg-green-600 text-white hover:bg-green-700"
+                                        type="button"
                                     >
                                         Make Affidavit
                                     </button>
@@ -333,27 +507,19 @@ export default function DocumentUpload(): JSX.Element {
                             <div className="mt-0">
                                 <h4 className="text-sm text-gray-500 mb-2">Recently uploaded</h4>
                                 <ul className="space-y-3">
-                                    {recentDocs.length === 0 && (
-                                        <li className="text-sm text-gray-400">No uploads</li>
-                                    )}
+                                    {recentDocs.length === 0 && <li className="text-sm text-gray-400">No uploads</li>}
                                     {recentDocs.map((d) => (
                                         <li
                                             key={d.document_id}
                                             className="flex items-start gap-3 p-3 bg-white border rounded cursor-pointer"
                                             onClick={() => setPreviewFile(d)}
                                         >
-                                            <div className="w-10 h-10 bg-gray-50 rounded flex items-center justify-center">
-                                                📄
-                                            </div>
+                                            <div className="w-10 h-10 bg-gray-50 rounded flex items-center justify-center">📄</div>
                                             <div className="text-sm">
                                                 <div className="font-medium">{d.file_name}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    {new Date(d.submitted_at).toLocaleString()}
-                                                </div>
+                                                <div className="text-xs text-gray-500">{new Date(d.submitted_at).toLocaleString()}</div>
                                             </div>
-                                            <div className="ml-auto text-xs text-blue-600">
-                                                {d.signed_file_url ? "View" : "No preview"}
-                                            </div>
+                                            <div className="ml-auto text-xs text-blue-600">{d.signed_file_url ? "View" : "No preview"}</div>
                                         </li>
                                     ))}
                                 </ul>
@@ -367,19 +533,13 @@ export default function DocumentUpload(): JSX.Element {
             {showAffidavit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
-                        {/* Header */}
                         <div className="flex justify-between items-start mb-4">
                             <h2 className="text-xl font-bold">Make Affidavit</h2>
-                            <button
-                                className="text-gray-500 hover:text-gray-700"
-                                onClick={() => setShowAffidavit(false)}
-                            >
+                            <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowAffidavit(false)}>
                                 ✖
                             </button>
                         </div>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Fill out the form below to create a new affidavit.
-                        </p>
+                        <p className="text-sm text-gray-500 mb-4">Fill out the form below to create a new affidavit.</p>
 
                         {/* Affidavit form */}
                         <AffidavitForm
@@ -393,7 +553,6 @@ export default function DocumentUpload(): JSX.Element {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
