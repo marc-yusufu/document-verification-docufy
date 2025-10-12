@@ -44,7 +44,7 @@ export default function QueuePage() {
     //api call to the backend to fetch documents with "pending" status
     async function getAllDocs2(){
       try{
-        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+        const res = await fetch(`http://localhost:5000/documents?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash

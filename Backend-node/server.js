@@ -4,7 +4,6 @@ import express from "express";
 import multer from "multer";
 import Document from "./models/Document.js";
 import supabase from "./superBaseConfig/supabase.js";
-import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from "path";
@@ -12,6 +11,8 @@ import path from "path";
 import { PDFDocument, rgb } from "pdf-lib";
 import sharp from "sharp";
 import fs from "fs";
+import Mailjet from 'node-mailjet';
+
 
 //import { supabase } from "./supabaseClient"; // your service key init
 const router = express.Router();
@@ -23,6 +24,12 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+//OTP API keys
+const mailjet = new Mailjet({
+  apiKey: process.env.MJ_APIKEY_PUBLIC,
+  apiSecret: process.env.MJ_APIKEY_PRIVATE,
+});
+
 // Multer setup for storing files locally in /uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, './uploads'),
@@ -33,13 +40,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// MongoDB connection with mongoose
-mongoose.connect(process.env.MONGO_URI, {
-  dbName: process.env.MONGO_DB_NAME || 'eDocufy_database'
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error: ', err))
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 // Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,10 +54,6 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'Welcome to Docufy backend!' });
 });
 
-app.get("/api/data", async (req, res) => {
-  const data = await Document.find().toArray();
-  res.json(data);
-});
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Server running' });
@@ -66,29 +66,6 @@ const getFileUrl = (req, filePath) => {
   return `${req.protocol}://${req.get("host")}/documents/${cleanPath}`;
 };
 
-// Upload route
-app.post("/upload", upload.single("file"), async (req, res) => {
-
-  //MongoDB
-  try {
-    const newDocument = await Document.create({
-      fileName: req.file.originalname,
-      filePath: req.file.path,
-      fileType: req.file.mimetype,
-      idCode: Math.random().toString(36).substring(2,8).toUpperCase(),
-      status: 'pending',
-      uploadedAt: new Date(),
-    });
-    
-    const fileUrl = getFileUrl(req, newDocument.filePath); //create file url for the frontend
-
-    console.log("Uploaded file:", req.file);
-    res.json({ success: true, message: 'File uploaded', document: {...newDocument.toObject(), fileUrl} });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-
-});
 
 // // Fetch alll documents 
 // app.get('/documents', async (req, res) => {
@@ -366,6 +343,42 @@ app.post("/documents/:code_id/reject", async (req, res) => {
   }
 });
 
+
+//send OTP during Admin registration
+app.post("/otp", async (req, res) => {
+
+  const {email} = req.body;
+  const otp = Math.floor(100000 + Math.random() * 900000); //to create a 6 digit OTP
+
+  try {
+    const result = await mailjet
+      .post("send", { version: "v3.1" })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: "yussdummy@gmail.com",
+              Name: "Test App",
+            },
+            To: [
+              {
+                Email: email,
+                Name: "New user",
+              },
+            ],
+            Subject: "OTP for verification",
+            TextPart: "Your One time Pin",
+            HTMLPart: `<h3><strong>${otp}</strong></h3>`,
+          },
+        ],
+      });
+    console.log("Message sent:", result.body);
+    res.json({success: true, otp});
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
+
+});
 
 
 // Start server locally

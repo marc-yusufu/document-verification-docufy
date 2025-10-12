@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import OtpInput from "react-otp-input";
 import logo from '../assets/images/logopng.png';
 import './WorkerSignUp.css';
 
@@ -20,6 +21,7 @@ interface WorkerFormData {
     role: string;
     department: string;
     branch_id: string;
+    otp: string,
 }
 
 function WorkerSignUpScreen() {
@@ -34,11 +36,14 @@ function WorkerSignUpScreen() {
         role: '',
         department: '',
         branch_id: '',
+        otp: '',
     });
 
     const [branches, setBranches] = useState<any[]>([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showOtp, setShowOtp] = useState(false);
+    const [oneTimePin, setOneTimePin] = useState<string>("")
     const navigate = useNavigate();
 
     // Fetch branches
@@ -64,6 +69,16 @@ function WorkerSignUpScreen() {
         setError('');
     };
 
+    const handleChange2 = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>{
+
+        const {name , value} = event.target; 
+
+        setForm(prev =>({
+            ...prev,
+            [name] : value,
+        }))
+    };    
+
     const validateForm = () => {
         const {
             first_name,
@@ -76,6 +91,7 @@ function WorkerSignUpScreen() {
             role,
             department,
             branch_id,
+            
         } = form;
 
         if (
@@ -107,6 +123,47 @@ function WorkerSignUpScreen() {
 
         return null;
     };
+
+    const validateOtp = () =>{
+        const {otp} = form;
+        if(!otp){
+            return 'Enter the OTP sent to your email'
+        }
+    }
+
+
+    //Show OTP container after pressing Register
+    const otpContainer = async () =>{
+        
+        try{
+            const response = await fetch('http://localhost:5000/otp',{
+                method: 'POST',
+                headers: {'Content-Type' : 'application/json'},
+                body: JSON.stringify(form),
+            });
+            console.log("Raw response: ", response);
+            const result = await response.json();
+            console.log("Result: ", result);
+            
+            if(result.success){
+                setShowOtp(true);
+                setOneTimePin(result.otp.toString());
+            }else{
+                alert("Error sending OTP: " + result.error)
+            }
+        }catch(error){
+            alert("Network error: " + error);
+        }
+ 
+    };
+    
+    const handleVerification = () =>{
+        if(form.otp === oneTimePin){
+            navigate("/home");
+        }else{
+            alert("OTP is wrong");
+        }
+    }
 
     // Generate WorkerID
     const generateWorkerId = () => {
@@ -193,14 +250,14 @@ function WorkerSignUpScreen() {
                         name="first_name"
                         placeholder="First Name"
                         value={form.first_name}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     />
                     <input
                         name="last_name"
                         placeholder="Last Name"
                         value={form.last_name}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     />
                 </div>
@@ -209,7 +266,7 @@ function WorkerSignUpScreen() {
                     name="username"
                     placeholder="Username"
                     value={form.username}
-                    onChange={handleChange}
+                    onChange={handleChange2}
                     className="worker-signup-input"
                 />
 
@@ -217,14 +274,14 @@ function WorkerSignUpScreen() {
                     name="email"
                     placeholder="Email"
                     value={form.email}
-                    onChange={handleChange}
+                    onChange={handleChange2}
                     className="worker-signup-input"
                 />
 
                 <select
                     name="gender"
                     value={form.gender}
-                    onChange={handleChange}
+                    onChange={handleChange2}
                     className="worker-signup-input"
                 >
                     <option value="">Select Gender</option>
@@ -238,7 +295,7 @@ function WorkerSignUpScreen() {
                         type="password"
                         placeholder="Password"
                         value={form.password}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     />
                     <input
@@ -246,7 +303,7 @@ function WorkerSignUpScreen() {
                         type="password"
                         placeholder="Confirm Password"
                         value={form.confirmPassword}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     />
                 </div>
@@ -255,7 +312,7 @@ function WorkerSignUpScreen() {
                     <select
                         name="role"
                         value={form.role}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     >
                         <option value="">Select Role</option>
@@ -267,7 +324,7 @@ function WorkerSignUpScreen() {
                     <select
                         name="department"
                         value={form.department}
-                        onChange={handleChange}
+                        onChange={handleChange2}
                         className="worker-signup-input"
                     >
                         <option value="">Select Department</option>
@@ -279,7 +336,7 @@ function WorkerSignUpScreen() {
                 <select
                     name="branch_id"
                     value={form.branch_id}
-                    onChange={handleChange}
+                    onChange={handleChange2}
                     className="worker-signup-input"
                 >
                     <option value="">Select Branch</option>
@@ -291,7 +348,10 @@ function WorkerSignUpScreen() {
                 </select>
 
                 <button
-                    onClick={handleRegister}
+                    onClick={()=>{
+                        setShowOtp(true); 
+                        otpContainer();
+                    }}
                     disabled={loading}
                     className="worker-signup-btn"
                 >
@@ -308,6 +368,45 @@ function WorkerSignUpScreen() {
                         </button>
                     </Link>
                 </div>
+
+                {/* OTP container */}
+                {/* OTP Modal */}
+                {showOtp && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-white/30 backdrop-blur-md bg-opacity-50">
+                        <div className="bg-white rounded-xl p-6 w-90 shadow-lg flex flex-col">
+                            <h2 className="text-xl font-bold mb-4 text-center">Enter OTP</h2>
+
+                            <div className='flex w-[100%] items-center justify-center'>
+
+                            <OtpInput
+                            value={form.otp}
+                            onChange={(otp: string) => setForm({ ...form, otp })}
+                            numInputs={6}
+                            inputType='text'
+                            shouldAutoFocus
+                            inputStyle=" flex  border border-gray-400 rounded w-10 h-12 mx-2 text-center text-[38px] focus:outline-blue-500"
+                            renderInput={(props) => <input {...props} />}
+                            />
+                            </div>
+
+
+                            <div className="flex justify-between mt-6">
+                                <button
+                                    onClick={() => setShowOtp(false)}
+                                    className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRegister}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    Verify
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
