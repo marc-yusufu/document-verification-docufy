@@ -1,3 +1,4 @@
+// src/pages/VerifiedPage.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/sidebar";
@@ -6,13 +7,13 @@ import { supabase } from "../Authentication/supabaseconfig";
 
 interface Document {
   document_id: string;
-  type: string;
-  file_url: string;
+  type?: string;
+  file_path?: string;
+  signed_file_url?: string;
   status: string;
   submitted_at: string;
-  signed_url?: string;
-  user_name?: string;   // optional, if you store the submitter
-  branch?: string;      // optional, if you store the branch
+  user_name?: string;
+  branch?: string;
 }
 
 export default function VerifiedPage() {
@@ -22,21 +23,35 @@ export default function VerifiedPage() {
 
   useEffect(() => {
     async function getVerifiedDocs() {
+      setLoading(true);
       try {
         const { data, error } = await supabase
           .from("documents")
-          .select("document_id, type, file_url, status, submitted_at")
+          .select("document_id, doc_type, file_path, status, submitted_at, file_name")
           .in("status", ["approved", "rejected"])
           .order("submitted_at", { ascending: false });
 
         if (error) throw error;
 
         const withUrls = await Promise.all(
-          data.map(async (doc) => {
-            const { data: signed } = await supabase.storage
-              .from("userDocuments")
-              .createSignedUrl(doc.file_url, 60 * 60);
-            return { ...doc, signed_url: signed?.signedUrl || "" };
+          (data || []).map(async (doc: any) => {
+            let signed_url = "";
+            try {
+              const { data: signed, error: urlError } = await supabase.storage
+                .from("userDocuments")
+                .createSignedUrl(doc.file_path, 60 * 60);
+              if (!urlError && signed?.signedUrl) signed_url = signed.signedUrl;
+            } catch (e) {
+              console.warn("signed url error for", doc.file_path, e);
+            }
+            return {
+              document_id: doc.document_id,
+              type: doc.doc_type || doc.file_name || "Document",
+              file_path: doc.file_path,
+              status: doc.status,
+              submitted_at: doc.submitted_at,
+              signed_file_url: signed_url,
+            };
           })
         );
 
@@ -98,24 +113,28 @@ export default function VerifiedPage() {
                     <td style={styles.td}>{index + 1}</td>
                     <td style={styles.td}>{doc.type}</td>
                     <td style={styles.td}>
-                      {new Date(doc.submitted_at).toLocaleDateString()}{" "}
-                      {new Date(doc.submitted_at).toLocaleTimeString()}
+                      {doc.submitted_at ? `${new Date(doc.submitted_at).toLocaleDateString()} ${new Date(doc.submitted_at).toLocaleTimeString()}` : "-"}
                     </td>
                     <td style={styles.td}>
-                      {doc.status === "approved" && (
-                        <span style={styles.statusApproved}>✔ Approved</span>
-                      )}
-                      {doc.status === "rejected" && (
-                        <span style={styles.statusRejected}>✖ Rejected</span>
-                      )}
+                      {doc.status === "approved" && <span style={styles.statusApproved}>✔ Approved</span>}
+                      {doc.status === "rejected" && <span style={styles.statusRejected}>✖ Rejected</span>}
                     </td>
                     <td style={styles.td}>
-                      <button
-                        style={styles.viewBtn}
-                        onClick={() => navigate(`/verifiedView/${doc.document_id}`)}
-                      >
-                        View
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+                        <button
+                          style={styles.viewBtn}
+                          onClick={() => {
+                            // open signed URL if available, else open file_path link (if you have public bucket)
+                            if (doc.signed_file_url) window.open(doc.signed_file_url, "_blank");
+                            else if (doc.file_path) {
+                              // fallback: you may want to call a backend to stream file
+                              alert("No signed url available for this file.");
+                            }
+                          }}
+                        >
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

@@ -1,379 +1,260 @@
-import cors from "cors";
-import dotenv from "dotenv";
+// server.js
 import express from "express";
+import cors from "cors";
 import multer from "multer";
-import Document from "./models/Document.js";
+import dotenv from "dotenv";
 import supabase from "./superBaseConfig/supabase.js";
-import mongoose from "mongoose";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import path from "path";
-
 import { PDFDocument, rgb } from "pdf-lib";
 import sharp from "sharp";
-import fs from "fs";
+import { createCanvas, loadImage, registerFont } from "canvas";
+import path from "path";
 
-//import { supabase } from "./supabaseClient"; // your service key init
-const router = express.Router();
-
-// Load environment variables
 dotenv.config();
-
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Multer setup for storing files locally in /uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, './uploads'),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname;
-    cb(null, uniqueName);
-  }
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// MongoDB connection with mongoose
-mongoose.connect(process.env.MONGO_URI, {
-  dbName: process.env.MONGO_DB_NAME || 'eDocufy_database'
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error: ', err))
+// Register fonts
+const fontsDir = path.join(process.cwd(), "assets/fonts");
+try {
+  registerFont(path.join(fontsDir, "OpenSans-Regular.ttf"), { family: "OpenSans" });
+  registerFont(path.join(fontsDir, "Pacifico-Regular.ttf"), { family: "Pacifico" });
+} catch (e) {
+  console.warn("Fonts not found, using system defaults");
+}
 
-// Serve uploaded files
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-app.use("/documents", express.static(path.join(__dirname, "uploads")));
-
-// Routes
-app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Welcome to Docufy backend!' });
-});
-
-app.get("/api/data", async (req, res) => {
-  const data = await Document.find().toArray();
-  res.json(data);
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Server running' });
-});
-
-// Helper to build full file URL
-const getFileUrl = (req, filePath) => {
-  // Strip out "uploads/" from stored path
-  const cleanPath = filePath.replace(/^uploads[\\/]/, "");
-  return `${req.protocol}://${req.get("host")}/documents/${cleanPath}`;
+// Helper: generate Supabase signed URL
+const getSignedUrl = async (bucket, filePath) => {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+  if (error) throw error;
+  return data.signedUrl;
 };
 
-// Upload route
-app.post("/upload", upload.single("file"), async (req, res) => {
+// Helper: generate short unique ID
+const makeDocId = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 
-  //MongoDB
-  try {
-    const newDocument = await Document.create({
-      fileName: req.file.originalname,
-      filePath: req.file.path,
-      fileType: req.file.mimetype,
-      idCode: Math.random().toString(36).substring(2,8).toUpperCase(),
-      status: 'pending',
-      uploadedAt: new Date(),
-    });
-    
-    const fileUrl = getFileUrl(req, newDocument.filePath); //create file url for the frontend
-
-    console.log("Uploaded file:", req.file);
-    res.json({ success: true, message: 'File uploaded', document: {...newDocument.toObject(), fileUrl} });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-
-});
-
-// // Fetch alll documents 
-// app.get('/documents', async (req, res) => {
-//   try{
-//     const docs = await Document.find().sort({uploadedAt: -1});
-
-//     const docsWithUrls = docs.map(doc => ({
-//       ...doc.toObject(),
-//       fileUrl: getFileUrl(req, doc.filePath)
-//     }));
-
-//     res.json(docsWithUrls);
-//   }catch(err){
-//     res.status(500).json({ success: false, error: err.message });
-//   }
-// })
-
-
-
-// Fetch documents with optional status filtering
-app.get('/documents', async (req, res) => {
-
-  /* supabase */
-  try {
-    let query = supabase.from("documents").select("*").order("submitted_at", {ascending: false});
-
-
-    // Example: /documents?status=approved,rejected
-    if (req.query.status) {
-      const statuses = req.query.status.split(",");
-      query = query.in("status", statuses)
+// Helper: wrap text for Canvas
+function wrapTextCentered(ctx, text, xCenter, yStart, maxWidth, lineHeight, font) {
+  ctx.font = font;
+  ctx.textAlign = "center";
+  const words = text.split(" ");
+  let line = "";
+  let y = yStart;
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + " ";
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), xCenter, y);
+      line = words[n] + " ";
+      y += lineHeight;
+    } else {
+      line = testLine;
     }
+  }
+  if (line) ctx.fillText(line.trim(), xCenter, y);
+  return y + lineHeight;
+}
 
-    const {data: docs, error} = await query;
-    console.log("Docs from Supabase:", docs);
-    console.log("Supabase error:", error);
+// Health check
+app.get("/api/health", (req, res) => res.json({ success: true, message: "Server running" }));
 
-    if(error) throw error;
+// Upload document
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file provided" });
+    const BUCKET_ID = "userDocuments";
+    const fileName = `${Date.now()}_${req.file.originalname}`;
 
-    const docsWithUrls = docs.map(doc => ({
-      ...doc,
-      fileUrl: getFileUrl(req, doc.filePath || "")
-    }));
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_ID)
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    if (uploadError) throw uploadError;
 
-    res.json(docsWithUrls);
-  } catch(err) {
+    const code_id = makeDocId();
+    const { data: doc, error: insertError } = await supabase
+      .from("documents")
+      .insert([{
+        file_name: req.file.originalname,
+        file_path: fileName,
+        doc_type: req.file.mimetype,
+        code_id,
+        status: "pending",
+        submitted_at: new Date()
+      }])
+      .select()
+      .single();
+    if (insertError) throw insertError;
+
+    res.json({ success: true, document: doc });
+  } catch (err) {
+    console.error("Upload error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-
-
-// Fetch document by code_id
-app.get('/documents/:code_id', async (req, res) => {
-
-  const codeIdParams = req.params.code_id;
-  const BUCKET_ID = "userDocuments";
-
-  console.log("Backend received file_url:", codeIdParams);
+// Get all documents
+app.get("/documents", async (req, res) => {
   try {
+    let query = supabase.from("documents").select("*").order("submitted_at", { ascending: false });
+    if (req.query.status) query = query.in("status", req.query.status.split(","));
+    const { data: docs, error } = await query;
+    if (error) throw error;
+
+    const docsWithUrls = await Promise.all(
+      docs.map(async doc => {
+        const url = await getSignedUrl("userDocuments", doc.file_path);
+        return { ...doc, url };
+      })
+    );
+    res.json(docsWithUrls);
+  } catch (err) {
+    console.error("Fetch documents error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get document by code_id
+app.get("/documents/:code_id", async (req, res) => {
+  try {
+    const { code_id } = req.params;
     const { data: doc, error } = await supabase
       .from("documents")
       .select("*")
-      .eq("code_id", codeIdParams)
+      .eq("code_id", code_id)
       .single();
-    
-    console.log("Query result: " , {data: doc, error: error})
+    if (error || !doc) return res.status(404).json({ error: "Document not found" });
 
-    if (error || !doc) {
-      console.error("Supabase error:", error);
-      return res.status(404).json({ error: "Document not found" });
-    }
-
-    // const fileUrl = doc.filepath ? getFileUrl(req, doc.filepath) : null;
-
-    // res.json({ ...doc, fileUrl });
-
-    const { data: signed } = await supabase.storage
-      .from(BUCKET_ID) //BUCKET storage name
-      .createSignedUrl(doc.file_path, 60 * 60 * 24 * 7); // 7 days
-    
-      // Attach signedUrl so frontend can render
-    const responseDoc = {
-      ...doc,
-      url: signed?.signedUrl ?? null,
-    };
-
-
-    res.json(responseDoc);
-
+    const url = await getSignedUrl("userDocuments", doc.file_path);
+    res.json({ ...doc, url });
   } catch (err) {
-    console.error("Server error:", err);
+    console.error("Fetch document error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-
-//Admin Update status of documents
-app.put('/documents/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const { data: updatedDoc, error } = await supabase
-      .from("documents")
-      .update({ status })
-      .eq("document_id", req.params.id)
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    res.json(updatedDoc);
-  } catch (err) {
-    console.error("Server error:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-})
-
-
-
-
-//Admin puts approval stamp on document by pressing approve button
+// Approve document & apply transparent stamp
 app.post("/documents/:code_id/approve", async (req, res) => {
-  const { code_id } = req.params;
-  const stampText = req.body.stampText || "APPROVED"; // or dynamic code
-  const BUCKET_ID = "userDocuments";
   try {
-    //Fetch the raw document metadata
-    console.log("1. Fetching document for code_id:", code_id); //1
+    const { code_id } = req.params;
+    const stampText = req.body.stampText || "APPROVED";
+    const verifier = req.body.verifier || "John Smith";
+    const designation = req.body.designation || "Chartered Accountant (SA)";
+    const designationNumber = req.body.designationNumber || "00112233";
+    const dateText = req.body.date || new Date().toLocaleDateString();
+    const address = req.body.address || "1st Floor, 123 Main Street, Rosebank, Johannesburg";
+    const BUCKET_ID = "userDocuments";
+
+    // Fetch document
     const { data: doc, error: fetchError } = await supabase
       .from("documents")
       .select("*")
       .eq("code_id", code_id)
       .single();
+    if (fetchError || !doc) return res.status(404).json({ error: "Document not found" });
 
-    if (fetchError || !doc) {
-      return res.status(404).json({ error: "Document not found" });
-    }
-
-    console.log("Full doc object: ", doc);
-
-    //Download original file from Supabase Storage 
-    console.log("2. Downloading file from path:", doc.file_path);
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from(BUCKET_ID)
-      .download(doc.file_path)
-
-    if (downloadError || !doc) throw downloadError;
-
+    const { data: fileData, error: downloadError } = await supabase.storage.from(BUCKET_ID).download(doc.file_path);
+    if (downloadError || !fileData) throw downloadError;
     const buffer = Buffer.from(await fileData.arrayBuffer());
     let stampedBuffer;
-    let stampedFileName = `${Date.now()}_${doc.file_name}`;
+    const stampedFileName = `${Date.now()}_${doc.file_name}`;
 
-    //Apply stamp based on file type
+    // Apply stamp
     if (doc.doc_type === "application/pdf") {
       const pdfDoc = await PDFDocument.load(buffer);
-      const pages = pdfDoc.getPages();
-
-      pages.forEach((page) => {
+      pdfDoc.getPages().forEach(page => {
         page.drawText(stampText, {
-          x: 50,
+          x: page.getWidth() - 200,
           y: 50,
-          size: 40,
+          size: 36,
           color: rgb(1, 0, 0),
-          opacity: 0.5,
+          opacity: 0.5
         });
       });
-
       stampedBuffer = Buffer.from(await pdfDoc.save());
-      
     } else if (doc.doc_type.startsWith("image/")) {
-      const svgWatermark = Buffer.from(
-        `<svg width="500" height="500">
-          <text x="20" y="50" font-size="30" fill="red" opacity="0.5">${stampText}</text>
-        </svg>`
-      );
+      const width = 600;
+      const height = 200;
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(255,0,0,0.5)";
+      ctx.font = "bold 48px OpenSans";
+      ctx.textAlign = "center";
+      ctx.fillText(stampText, width / 2, height / 2);
+      const stampBuffer = canvas.toBuffer("png");
       stampedBuffer = await sharp(buffer)
-        .composite([{ input: svgWatermark, gravity: "southeast" }])
+        .composite([{ input: stampBuffer, gravity: "southeast" }])
         .toBuffer();
-      stampedFileName = `${Date.now()}_${doc.file_name}`;
     } else {
       return res.status(400).json({ error: "Unsupported file type" });
     }
 
-    //Upload stamped file to Supabase storage
-    console.log("Uplaoding stamped file", stampedFileName);
+    // Upload stamped file
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_ID)
-      .upload(stampedFileName, stampedBuffer, {
-         contentType: doc.doc_type,
-         upsert: true, //this is to overwrite if the name already exist 
-        });
-
+      .upload(stampedFileName, stampedBuffer, { contentType: doc.doc_type, upsert: true });
     if (uploadError) throw uploadError;
 
-    //update status in raw documents table
-    const {data: updatedDoc, error: updateError} = await supabase
+    // Update metadata in Supabase
+    const { data: updatedDoc, error: updateError } = await supabase
       .from("documents")
-      .update({ 
-        status: "Approved",
+      .update({
+        status: "approved",
         file_path: stampedFileName,
         verified_at: new Date().toISOString(),
-        stamp_text: stampText, 
+        stamp_text: stampText,
+        verifier,
+        designation,
+        designationNumber,
+        verification_date: dateText,
+        address
       })
       .eq("document_id", doc.document_id)
       .select()
       .single();
+    if (updateError) throw updateError;
 
-    if(updateError) throw updateError;
-
-    res.json({ 
-      message: "Document stamped and approved!", 
-      updatedDoc, 
-    });
-
+    const signedUrl = await getSignedUrl(BUCKET_ID, updatedDoc.file_path);
+    res.json({ message: "Document approved and stamped!", updatedDoc: { ...updatedDoc, signed_url: signedUrl } });
   } catch (err) {
-    console.error("Approve & Stamp error:", err);
-    res.status(500).json({ error: "Failed to approve and stamp document" });
-    console.error("Detailed error at step:", err.message);
-    console.error("Error stack:", err.stack);
-    res.status(500).json({ error: "Failed to approve and stamp document", details: err.message });
+    console.error("Approve & stamp error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-//Admin rejects document
+// Reject document
 app.post("/documents/:code_id/reject", async (req, res) => {
-  const { code_id } = req.params;
-  const { comment } = req.body;
   try {
-    //Fetch the raw document metadata
-    console.log("1. Fetching document for code_id:", code_id); //1
+    const { code_id } = req.params;
     const { data: doc, error: fetchError } = await supabase
       .from("documents")
       .select("*")
       .eq("code_id", code_id)
       .single();
+    if (fetchError || !doc) return res.status(404).json({ error: "Document not found" });
 
-    if (fetchError || !doc) {
-      return res.status(404).json({ error: "Document not found" });
-    }
-
-    //update status in raw documents table
-    const {data: updatedDoc, error: updateError} = await supabase
+    const { data: updatedDoc, error: updateError } = await supabase
       .from("documents")
-      .update({ 
-        status: "Rejected",
-      })
+      .update({ status: "rejected" })
       .eq("document_id", doc.document_id)
       .select()
       .single();
+    if (updateError) throw updateError;
 
-    if(updateError) throw updateError;
-
-    res.json({ 
-      message: "Document rejected!", 
-      updatedDoc, 
-    });
-
+    const signedUrl = await getSignedUrl("userDocuments", updatedDoc.file_path);
+    res.json({ message: "Document rejected!", updatedDoc: { ...updatedDoc, signed_url: signedUrl } });
   } catch (err) {
-    console.error("Rejection error:", err);
-    res.status(500).json({ error: "Failed to reject document" });
-    console.error("Detailed error at step:", err.message);
-    console.error("Error stack:", err.stack);
-    res.status(500).json({ error: "Failed to reject document", details: err.message });
+    console.error("Reject error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-
-// Start server locally
-if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-}
-
-
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 export default app;

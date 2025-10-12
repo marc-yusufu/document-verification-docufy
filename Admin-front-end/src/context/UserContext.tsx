@@ -34,11 +34,11 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return;
         }
 
-        // Try fetching worker by ID
+        // ✅ FIXED HERE — use user_id instead of id
         const { data: workerData, error: workerError } = await supabase
           .from("workers")
           .select("first_name, role")
-          .eq("id", currentUser.id)
+          .eq("user_id", currentUser.id) // ✅ CORRECT COLUMN
           .maybeSingle();
 
         if (workerError) console.warn(workerError.message);
@@ -53,7 +53,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return;
         }
 
-        // fallback: use email local-part
+        // fallback
         const fallbackName = currentUser.email?.split("@")[0] || "User";
         if (!mounted) return;
         setUser({ firstName: fallbackName, role: "User" });

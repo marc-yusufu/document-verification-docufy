@@ -3,145 +3,136 @@ import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/sidebar";
 import TopPanel from "../components/TopPanel";
 import RightDetailsPanel from "../components/RightDetailsPanel";
-import { supabase } from "../Authentication/supabaseconfig";
-
-import { useComment } from "../context/context";
 
 interface Docs {
+  fileName: string;
+  fileType: string;
+  filePath: string;
+  fileUrl: string;
+  status: string;
+  uploadedAt: Date;
 
-  fileName: string
-  fileType: string
-  filePath: string
-  fileUrl: string
-  status: string
-  uploadedAt: Date
-
-  //supabase
-  document_id: string
-  file_name: string
-  type: string
-  url: string
+  // Supabase / backend fields
+  document_id: string;
+  file_name: string;
+  type: string;
+  url: string;
   file_path: string;
-  submitted_at: Date
+  submitted_at: Date;
   submittedBy: string;
   code_id: string;
   doc_type: string;
-
+  signed_url: string;
+  stamp_text: string;
+  verified_at: string;
 }
-
-interface Stamp {
-  state: string;
-  by: string;
-  date: string;
-}
-
-type Props = {
-  doc: Document;
-  onStatusChange: (updatedDoc: Document) => void; // parent refresh
-};
-
 
 export default function QueueViewPage() {
   const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
-  const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
-  const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
-  
-  const paragraph = "state: Verified and Certified \nBy: Admin Marc Yusufu. \nThis document is Valid. \nDate: 19th September 2025"
+  const [loadingAction, setLoadingAction] = useState(false);
 
   const navigate = useNavigate();
+  const { code_id } = useParams<{ code_id: string }>();
 
-  //const {commentText} = useComment();
-  //const comment = commentText;
+  const stampText =
+    "State: Verified and Certified \nBy: Admin Marc Yusufu. \nThis document is Valid. \nDate: 19th September 2025";
 
-  const {code_id} = useParams<{code_id : string}>()
-  
-  ///fetching document by making api call to the backend
+  // Fetch document from backend
   useEffect(() => {
-    if (!code_id) return; // Don't fetch if id is missing
+    if (!code_id) return;
 
-      const viewDocs = async () => {
-        try {
-          const res = await fetch(`http://localhost:5000/documents/${code_id}`);
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          const doc = await res.json();
-          setDisplayDoc(doc);
-          console.log("From the backend: ", doc.url)
-        } catch (err) {
-          console.error("Error while trying to display the document: ", err);
-        }
+    const fetchDoc = async () => {
+      try {
+        const res = await fetch(`http://localhost:4000/documents/${code_id}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const doc = await res.json();
+        setDisplayDoc(doc);
+      } catch (err) {
+        console.error("Error fetching document:", err);  
       }
-    viewDocs();
+    };
+
+    fetchDoc();
   }, [code_id]);
 
-  if (!displayDoc){
-    return(
+  if (!displayDoc) {
+    return (
       <div style={{ padding: "2rem" }}>
         <p>Loading...</p>
         <p>Connecting to server</p>
       </div>
-      
-    ) 
-  } 
-  
-  const fileUrl = `http://localhost:5000/documents/${displayDoc.filePath}`; //to display preview on the browser
+    );
+  }
 
-  //to Approve of the document
+  // Approve & Stamp document
   const ApproveDoc = async (): Promise<boolean> => {
-    //setLoading(true);
+    setLoadingAction(true);
     try {
       const res = await fetch(
         `http://localhost:5000/documents/${code_id}/approve`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stampText: paragraph}),
+          body: JSON.stringify({ stampText }),
         }
       );
-      console.log("Response: ", res);
+      if (!res.ok) throw new Error("Failed to approve and stamp document");
 
-      if (!res.ok) throw new Error("Failed to update status");
+      const { updatedDoc } = await res.json();
 
-      const updatedDoc = await res.json();
+      setDisplayDoc({
+        ...displayDoc,
+        file_path: updatedDoc.file_path,
+        url: updatedDoc.signed_url || updatedDoc.url,
+        status: updatedDoc.status,
+        verified_at: updatedDoc.verified_at,
+        stamp_text: updatedDoc.stamp_text,
+      });
 
-      setDisplayDoc(updatedDoc); // Update local state so UI refreshes
-      console.log("Status updated:", updatedDoc.status);
-      window.alert("Document status updated")
-      return true; //operation success
-
+      alert("Document stamped and approved!");
+      return true;
     } catch (err) {
-      console.error("Error updating status:", err);
-      alert("Could not update status");
+      console.error("Error approving document:", err);
+      alert("Could not approve document. Try again.");
       return false;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
-  //to Reject the document
+  // Reject document
   const RejectDoc = async (): Promise<boolean> => {
-      //setLoading(true);
-      try {
+    setLoadingAction(true);
+    try {
       const res = await fetch(
-          `http://localhost:5000/documents/${code_id}/reject`,
-          {
+        `http://localhost:5000/documents/${code_id}/reject`,
+        {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ staus : "Rejected" }),
-          }
+          body: JSON.stringify({ status: "Rejected" }),
+        }
       );
-      console.log("Response: ", res);
+      if (!res.ok) throw new Error("Failed to reject document");
 
-      if (!res.ok) throw new Error("Failed to update status");
+      const { updatedDoc } = await res.json();
 
-      //console.log("Status updated:", updatedDoc.status);
-      window.alert("Document Rejected")
-      return true; //operation success
+      setDisplayDoc({
+        ...displayDoc,
+        status: updatedDoc.status,
+      });
 
-      } catch (err) {
-      console.error("Error updating status:", err);
-      alert("Could not update status");
+      alert("Document rejected!");
+      return true;
+    } catch (err) {
+      console.error("Error rejecting document:", err);
+      alert("Could not reject document. Try again.");
       return false;
-      }
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
+  // Styles
   const styles: { [key: string]: React.CSSProperties } = {
     container: { display: "flex", height: "100vh", overflow: "hidden" },
     main: { flex: 1, display: "flex", flexDirection: "column", background: "#f7f7f7" },
@@ -156,8 +147,8 @@ export default function QueueViewPage() {
       color: "#9ca3af",
       marginRight: "1rem",
       borderRadius: "8px",
-      overflow: "auto", // ✅ scroll only inside here
-      height: "100%", // fill available space
+      overflow: "auto",
+      height: "100%",
     },
   };
 
@@ -167,60 +158,52 @@ export default function QueueViewPage() {
       <div style={styles.main}>
         <TopPanel />
         <div style={styles.content}>
-          {/* Document Preview Area */}
+          {/* Document Preview */}
           <div style={styles.documentArea}>
-            { displayDoc ? (
-              displayDoc.doc_type === "application/pdf" ? (
-                <iframe
-                  src={displayDoc.url}
-                  width="100%"
-                  height="100%"
-                  title={displayDoc.file_name}
-                  style={{ border: "none", flex:1  }}
-                ></iframe>
-              ) : displayDoc.doc_type.startsWith("image/") ? (
-                <img
-                  src={displayDoc.url}
-                  alt={displayDoc.file_name}
-                  width="100%"
-                  height="100%"
-                  style={{ maxWidth: "100%", height: "auto", flex: 1 }}
-                />
-              ) : (
-                <p>
-                  Unsupported file type.{" "}
-                  <a href={displayDoc.url} target="_blank" rel="noopener noreferrer">
-                    Download instead
-                  </a>
-                </p>
-              )
+            {displayDoc.doc_type === "application/pdf" ? (
+              <iframe
+                src={displayDoc.url}
+                width="100%"
+                height="100%"
+                title={displayDoc.file_name}
+                style={{ border: "none", flex: 1 }}
+              />
+            ) : displayDoc.doc_type.startsWith("image/") ? (
+              <img
+                src={displayDoc.url}
+                alt={displayDoc.file_name}
+                style={{ maxWidth: "100%", height: "auto", flex: 1 }}
+              />
             ) : (
-              <p style={{ margin: "auto" }}>No document found</p>
+              <p>
+                Unsupported file type.{" "}
+                <a href={displayDoc.url} target="_blank" rel="noopener noreferrer">
+                  Download instead
+                </a>
+              </p>
             )}
           </div>
 
-          {/* Right Panel */}
+          {/* Right Details Panel */}
           <RightDetailsPanel
-            submittedBy={displayDoc?.submittedBy || "Loading..."}
-            type={displayDoc?.type || ""}
+            submittedBy={displayDoc.submittedBy}
+            type={displayDoc.type}
             branch="Soweto"
-            submittedOn={displayDoc? new Date(displayDoc.submitted_at).toDateString() : ""}
-            status={displayDoc?.status || ""}
+            submittedOn={new Date(displayDoc.submitted_at).toDateString()}
+            status={displayDoc.status}
             commentMaxLength={120}
-            onApprove={async()=>{
+            onApprove={async () => {
               const success = await ApproveDoc();
-              if(success){
-                navigate("/queue");
-              }
+              if (success) navigate("/queue");
             }}
-            onReject={async()=>{
+            onReject={async () => {
               const success = await RejectDoc();
-              if(success){
-
-              }
+              if (success) navigate("/queue");
+            }}
+            onReassign={() => {
+              alert("This document will be reassigned to a different Admin");
               navigate("/queue");
             }}
-            onReassign={() => {alert("This document will be reassigned to a different Admin"); navigate("/queue");}}
             onCancel={() => navigate("/queue")}
             approveDisabled={loadingAction}
             rejectDisabled={loadingAction}

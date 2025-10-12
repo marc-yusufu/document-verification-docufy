@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/pages/DashboardPage.tsx
+import React, { useEffect, useState } from "react";
 import {
   MdInfo,
   MdCancel,
@@ -22,13 +23,13 @@ interface RecentActivity {
 }
 
 interface Docs {
-  id: string | number;
-  fileName: string;
-  fileType: string;
-  filePath: string;
-  fileUrl: string;
+  document_id: string;
+  file_name?: string;
+  doc_type?: string;
+  file_path?: string;
+  signed_file_url?: string;
   status: string;
-  uploadedAt: string;
+  submitted_at: string;
 }
 
 const DashboardPage: React.FC = () => {
@@ -42,7 +43,6 @@ const DashboardPage: React.FC = () => {
   });
   const [trendData, setTrendData] = useState<{ dates: string[]; counts: number[] }>({ dates: [], counts: [] });
 
-  // Map color names to Tailwind classes
   const colorMap: Record<string, string> = {
     yellow: "text-yellow-500",
     green: "text-green-500",
@@ -57,7 +57,7 @@ const DashboardPage: React.FC = () => {
       const approvedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "approved");
       const rejectedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "rejected");
 
-      const avgTime = 136; // placeholder, replace with real calculation
+      const avgTime = 136; // placeholder
 
       setStats({
         pending: pendingRes.count || 0,
@@ -90,11 +90,30 @@ const DashboardPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from("documents")
-        .select("*")
-        .order("uploadedAt", { ascending: false })
+        .select("document_id, file_name, doc_type, file_path, status, submitted_at")
+        .order("submitted_at", { ascending: false })
         .limit(5);
-      if (error) console.error(error);
-      else setDocs(data || []);
+
+      if (error) {
+        console.error("fetchDocs error:", error);
+        return;
+      }
+
+      // try to create signed urls for docs
+      const docsWithUrls = await Promise.all(
+        (data || []).map(async (d: any) => {
+          let fileUrl = "";
+          try {
+            const { data: signed, error: urlErr } = await supabase.storage.from("userDocuments").createSignedUrl(d.file_path, 60 * 60);
+            if (!urlErr && signed?.signedUrl) fileUrl = signed.signedUrl;
+          } catch (e) {
+            console.warn("signed-url error", e);
+          }
+          return { ...d, fileUrl };
+        })
+      );
+
+      setDocs(docsWithUrls);
     } catch (err) {
       console.error(err);
     }
@@ -107,10 +126,11 @@ const DashboardPage: React.FC = () => {
         .from("recent_activity")
         .select("created_at")
         .order("created_at", { ascending: true });
+
       if (!data) return;
 
       const dateMap: Record<string, number> = {};
-      data.forEach((item) => {
+      data.forEach((item: any) => {
         const date = new Date(item.created_at).toLocaleDateString();
         dateMap[date] = (dateMap[date] || 0) + 1;
       });
@@ -121,7 +141,6 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // --- Realtime subscription ---
   useEffect(() => {
     fetchStats();
     fetchActivity();
@@ -139,11 +158,15 @@ const DashboardPage: React.FC = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // unsubscribe the channel properly
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn("removeChannel failed", e);
+      }
     };
   }, []);
 
-  // --- Quick Stats Card Component ---
   const QuickStatsCard = ({ title, count, icon, color, trend }: any) => (
     <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
       <div className="flex justify-between items-center">
@@ -169,7 +192,6 @@ const DashboardPage: React.FC = () => {
         <TopPanel />
         <h2 className="text-2xl font-bold text-gray-800">Welcome back!</h2>
 
-        {/* Quick Stats */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <QuickStatsCard title="Pending" count={stats.pending} color="yellow" icon={<MdCancel />} trend={5} />
           <QuickStatsCard title="Verified" count={stats.approved} color="green" icon={<MdCheckCircle />} trend={10} />
@@ -177,7 +199,6 @@ const DashboardPage: React.FC = () => {
           <QuickStatsCard title="Avg Verification Time" count={stats.avgVerificationTime} color="blue" icon={<MdInfo />} trend={-1} />
         </section>
 
-        {/* Trend Chart */}
         {trendData.dates.length > 0 && (
           <section className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Verification Trend</h3>
@@ -199,7 +220,6 @@ const DashboardPage: React.FC = () => {
           </section>
         )}
 
-        {/* Recent Activity + Docs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="bg-white p-4 rounded-lg shadow overflow-x-auto">
             <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
@@ -234,13 +254,13 @@ const DashboardPage: React.FC = () => {
           <section className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Latest Documents</h3>
             <ul className="flex flex-col gap-2">
-              {docs.map((d) => (
-                <li key={d.id} className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
-                  <span>{d.fileName}</span>
+              {docs.map((d: any) => (
+                <li key={d.document_id} className="flex justify-between items-center p-2 rounded hover:bg-gray-50">
+                  <span>{d.file_name || d.doc_type || "Document"}</span>
                   <span className={`text-sm font-bold ${d.status === "approved" ? "text-green-600" : d.status === "rejected" ? "text-red-600" : "text-yellow-600"}`}>
                     {d.status}
                   </span>
-                  <a href={d.fileUrl} target="_blank" className="text-blue-500 hover:underline">View</a>
+                  <a href={d.fileUrl || "#"} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">View</a>
                 </li>
               ))}
             </ul>
