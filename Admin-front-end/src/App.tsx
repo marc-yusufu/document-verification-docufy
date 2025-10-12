@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import AOS from "aos"; 
+import AOS from "aos";
 import "aos/dist/aos.css";
 import "@radix-ui/themes/styles.css";
 
@@ -14,6 +14,8 @@ import ResetPassword from "./Authentication/ResertPassword";
 import DashboardPage from "./screens/DashboardPage";
 import QueuePage from "./screens/QueuePage";
 import QueueViewPage from "./screens/QueueViewPage";
+import VerifiedPage from "./screens/VerifiedPage";
+import VerifiedViewPage from "./screens/VerifiedViewPage";
 import SettingsPage from "./screens/SettingsPage";
 import Layout from "./Layout";
 
@@ -59,17 +61,22 @@ const App = () => {
 
 
         {/* Pages with sidebar */}
-        <Route element={<Layout />}/>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/queue" element={<QueuePage />} />
-          <Route path="/queueView/:code_id" element={<QueueViewPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        <Route element={<Layout />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/queue" element={<QueuePage />} />
+        <Route path="/queueView/:code_id" element={<QueueViewPage />} />
+        <Route path="/verified" element={<VerifiedPage />} />
+        <Route path="/verifiedView/:code_id" element={<VerifiedViewPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
 
         {/* Private Routes */}
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/queue" element={<QueuePage />} />
+            <Route path="/queueView/:code_id" element={<QueueViewPage />} />
+            <Route path="/verified" element={<VerifiedPage />} />
+            <Route path="/verifiedView/:code_id" element={<VerifiedViewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

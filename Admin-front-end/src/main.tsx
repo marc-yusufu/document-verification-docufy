@@ -5,6 +5,7 @@ import { Theme } from '@radix-ui/themes';
 import App from './App';
 import './index.css';
 import "@radix-ui/themes/styles.css";
+import { UserProvider } from "../src/context/UserContext";
 
 
 import DashboardPage from './screens/DashboardPage';
@@ -14,7 +15,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Theme>
-        <App />
+        <UserProvider>
+          <App />
+        </UserProvider>
       </Theme>
 
     </BrowserRouter>
