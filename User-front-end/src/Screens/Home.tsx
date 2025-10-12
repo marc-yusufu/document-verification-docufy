@@ -336,6 +336,7 @@ export default function Home(): JSX.Element {
                     alt={previewDoc.file_name}
                     className="max-h-[400px] object-contain"
                   />
+                  
                 ) : (
                   <div className="text-5xl">📄</div>
                 )}

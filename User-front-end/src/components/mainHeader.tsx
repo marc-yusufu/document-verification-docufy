@@ -192,7 +192,7 @@ export default function MainHeader() {
             />
           </button>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-900">User Name</span>
+            <span className="text-sm font-medium text-gray-900">Mohammed Smith</span>
             <span className="text-xs text-gray-600">Welcome</span>
           </div>
         </div>

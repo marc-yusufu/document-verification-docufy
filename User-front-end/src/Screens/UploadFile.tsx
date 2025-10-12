@@ -25,6 +25,7 @@ interface UploadedDoc {
     submitted_at: string;
     code_id?: string;
     status: string;
+    
 
     //submitted_by?: string | null;
     branch_assigned?: string | null;
@@ -86,6 +87,7 @@ export default function DocumentUpload(): JSX.Element {
                     : "document";
                 const fileName = `${Date.now()}_${safeType}.${ext}`;
                 const filePath = `${user.id}/${fileName}`;
+                const doc_type= file?.type;
 
                 const { error: storageError } = await supabase.storage
                     .from(BUCKET_ID)
@@ -97,9 +99,10 @@ export default function DocumentUpload(): JSX.Element {
                     file_name: f.name,
                     type: selectedType,
                     file_path: filePath,
-                    status: "Pending",
+                    status: "pending",
                     submitted_at: new Date().toISOString(),
                     code_id: code,
+                    doc_type: doc_type,
                     //submitted_by: user.email ?? null,
                     branch_assigned: null,
                     comments: null,
@@ -300,7 +303,7 @@ export default function DocumentUpload(): JSX.Element {
                             )}
 
                             {/* Buttons */}
-                            <div className="flex items-center justify-between mt-8  gap-6 mt-8 flex-wrap">
+                            <div className="flex items-center justify-between mt-8  gap-6 flex-wrap">
                                 <div className="flex gap-4">
                                     <button
                                         onClick={cancelUpload}
