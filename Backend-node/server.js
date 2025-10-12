@@ -4,7 +4,6 @@ import express from "express";
 import multer from "multer";
 import Document from "./models/Document.js";
 import supabase from "./superBaseConfig/supabase.js";
-import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from "path";
@@ -33,12 +32,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// MongoDB connection with mongoose
-mongoose.connect(process.env.MONGO_URI, {
-  dbName: process.env.MONGO_DB_NAME || 'eDocufy_database'
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB connection error: ', err))
 
 // Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
