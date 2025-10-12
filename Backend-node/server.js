@@ -40,10 +40,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
 // Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
