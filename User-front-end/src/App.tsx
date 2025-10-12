@@ -69,7 +69,7 @@ const App = () => {
         <Route path="/verify" element={<VerificationScreen />} />
         <Route path="/home" element={<Home />} />
         <Route path="" element={<Upload />} />
-        <Route path="upload" element={<UploadFile />} />
+        <Route path="/upload" element={<UploadFile />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/settings" element={<SettingPage />} />
