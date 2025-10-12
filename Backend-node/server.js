@@ -4,27 +4,54 @@ import cors from "cors";
 import multer from "multer";
 import dotenv from "dotenv";
 import supabase from "./superBaseConfig/supabase.js";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from "path";
+
 import { PDFDocument, rgb } from "pdf-lib";
 import sharp from "sharp";
-import { createCanvas, loadImage, registerFont } from "canvas";
-import path from "path";
+import fs from "fs";
+import Mailjet from 'node-mailjet';
+
+
+//import { supabase } from "./supabaseClient"; // your service key init
+const router = express.Router();
 
 dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const storage = multer.memoryStorage();
+//OTP API keys
+const mailjet = new Mailjet({
+  apiKey: process.env.MJ_APIKEY_PUBLIC,
+  apiSecret: process.env.MJ_APIKEY_PRIVATE,
+});
+
+// Multer setup for storing files locally in /uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, './uploads'),
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
+  }
+});
 const upload = multer({ storage });
 
-// Register fonts
-const fontsDir = path.join(process.cwd(), "assets/fonts");
-try {
-  registerFont(path.join(fontsDir, "OpenSans-Regular.ttf"), { family: "OpenSans" });
-  registerFont(path.join(fontsDir, "Pacifico-Regular.ttf"), { family: "Pacifico" });
-} catch (e) {
-  console.warn("Fonts not found, using system defaults");
-}
+// Serve uploaded files
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+app.use("/documents", express.static(path.join(__dirname, "uploads")));
+
+// Routes
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Welcome to Docufy backend!' });
+});
+
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'Server running' });
+});
 
 // Helper: generate Supabase signed URL
 const getSignedUrl = async (bucket, filePath) => {
@@ -35,33 +62,27 @@ const getSignedUrl = async (bucket, filePath) => {
   return data.signedUrl;
 };
 
-// Helper: generate short unique ID
-const makeDocId = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 
-// Helper: wrap text for Canvas
-function wrapTextCentered(ctx, text, xCenter, yStart, maxWidth, lineHeight, font) {
-  ctx.font = font;
-  ctx.textAlign = "center";
-  const words = text.split(" ");
-  let line = "";
-  let y = yStart;
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + " ";
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && n > 0) {
-      ctx.fillText(line.trim(), xCenter, y);
-      line = words[n] + " ";
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) ctx.fillText(line.trim(), xCenter, y);
-  return y + lineHeight;
-}
+// // Fetch alll documents 
+// app.get('/documents', async (req, res) => {
+//   try{
+//     const docs = await Document.find().sort({uploadedAt: -1});
 
-// Health check
-app.get("/api/health", (req, res) => res.json({ success: true, message: "Server running" }));
+//     const docsWithUrls = docs.map(doc => ({
+//       ...doc.toObject(),
+//       fileUrl: getFileUrl(req, doc.filePath)
+//     }));
+
+//     res.json(docsWithUrls);
+//   }catch(err){
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// })
+
+
+
+// Fetch documents with optional status filtering
+app.get('/documents', async (req, res) => {
 
 // Upload document
 app.post("/upload", upload.single("file"), async (req, res) => {
@@ -254,7 +275,50 @@ app.post("/documents/:code_id/reject", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+//send OTP during Admin registration
+app.post("/otp", async (req, res) => {
+
+  const {email} = req.body;
+  const otp = Math.floor(100000 + Math.random() * 900000); //to create a 6 digit OTP
+
+  try {
+    const result = await mailjet
+      .post("send", { version: "v3.1" })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: "yussdummy@gmail.com",
+              Name: "Test App",
+            },
+            To: [
+              {
+                Email: email,
+                Name: "New user",
+              },
+            ],
+            Subject: "OTP for verification",
+            TextPart: "Your One time Pin",
+            HTMLPart: `<h3><strong>${otp}</strong></h3>`,
+          },
+        ],
+      });
+    console.log("Message sent:", result.body);
+    res.json({success: true, otp});
+  } catch (err) {
+    console.error("Error sending email:", err);
+  }
+
+});
+
+
+// Start server locally
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+}
+
+
 
 export default app;

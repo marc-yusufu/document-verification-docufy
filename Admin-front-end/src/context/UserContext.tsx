@@ -38,7 +38,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data: workerData, error: workerError } = await supabase
           .from("workers")
           .select("first_name, role")
-          .eq("user_id", currentUser.id) // ✅ CORRECT COLUMN
+
+          .eq("worker_id", currentUser.id)
+
           .maybeSingle();
 
         if (workerError) console.warn(workerError.message);

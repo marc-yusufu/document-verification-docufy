@@ -24,41 +24,27 @@ export default function QueuePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchPendingDocuments() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error } = await supabase
-          .from("documents")
-          .select("document_id, file_path, file_name, doc_type, status, submitted_at, code_id")
-          .eq("status", "pending")
-          .order("submitted_at", { ascending: false });
 
-        if (error) throw error;
+    async function getAllDocuments(){
+        try{
+        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+        const docs = await res.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setDocs(docs);
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
+      }
+    }
 
-        const docsWithUrls = await Promise.all(
-          (data || []).map(async (doc: any) => {
-            let signed_url = "";
-            try {
-              const { data: signed, error: urlError } = await supabase.storage
-                .from("userDocuments")
-                .createSignedUrl(doc.file_path, 60 * 60); // 1 hour
-              if (!urlError && signed?.signedUrl) signed_url = signed.signedUrl;
-            } catch (e) {
-              // ignore signed url errors per doc but log
-              console.warn("signed url error for", doc.file_path, e);
-            }
-            return { ...doc, signed_url };
-          })
-        );
-
-        setPendingDocs(docsWithUrls);
-      } catch (err: any) {
-        console.error("Error fetching documents:", err);
-        setPendingDocs([]);
-        setError(err.message || "Failed to fetch pending documents");
-      } finally {
-        setLoading(false);
+    //api call to the backend to fetch documents with "pending" status
+    async function getAllDocs2(){
+      try{
+        const res = await fetch(`http://localhost:5000/documents?status=pending`)
+        const docs = await res.json()
+        console.log('Document list: ', docs) //for console while debugging
+        setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
+      }catch(err){
+        console.error("Error while fetching documents: ", err);
       }
     }
 
