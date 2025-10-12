@@ -42,7 +42,7 @@ type Props = {
 
 
 export default function QueueViewPage() {
-  const [displayDoc, setDisplayDoc] = useState<Docs | null>(null);
+  const [displayDoc, setDisplayDoc] = useState<Docs | null>();
   const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
   const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
   
