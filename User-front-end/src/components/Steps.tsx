@@ -7,8 +7,8 @@ const steps = [
   },
   {
     id: 2,
-    title: "AI Checks Instantly",
-    desc: "Our AI analyzes and checks the document for authenticity and accuracy in seconds.",
+    title: "Fast Checks",
+    desc: "Your document is checked for authenticity and accuracy in minutes.",
     image: "/IconPac/undraw_document-analysis_3c0y.png",
   },
   {

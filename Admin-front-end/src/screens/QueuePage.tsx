@@ -6,7 +6,7 @@ import TopPanel from "../components/TopPanel";
 import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
-interface Document{
+interface Document {
   id: string
   document_id: string;
   file_url: string
@@ -30,25 +30,25 @@ export default function QueuePage() {
 
   useEffect(() => {
 
-    async function getAllDocuments(){
-        try{
+    async function getAllDocuments() {
+      try {
         const res = await fetch(`http://localhost:5000/documents/?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setDocs(docs);
-      }catch(err){
+      } catch (err) {
         console.error("Error while fetching documents: ", err);
       }
     }
 
     //api call to the backend to fetch documents with "pending" status
-    async function getAllDocs2(){
-      try{
+    async function getAllDocs2() {
+      try {
         const res = await fetch(`http://localhost:5000/documents?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
-      }catch(err){
+      } catch (err) {
         console.error("Error while fetching documents: ", err);
       }
     }
@@ -89,7 +89,7 @@ export default function QueuePage() {
             </thead>
             <tbody>
 
-              { docs.length === 0 ? (
+              {docs.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
@@ -107,12 +107,12 @@ export default function QueuePage() {
                       {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
                     </td>
                     <td style={styles.td} className="flex">
-                      <button 
+                      <button
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
-                        style={styles.viewBtn} 
+                        style={styles.viewBtn}
                         onClick={() => navigate(`/queueView/${doc.code_id}`)}
                       >
-                        View<MdVisibility/>
+                        View<MdVisibility />
                       </button>
                     </td>
                   </tr>
