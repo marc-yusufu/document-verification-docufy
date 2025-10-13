@@ -19,6 +19,8 @@ interface RecentActivity {
   status?: string;
   notes?: string;
   created_at: string;
+  submitted_at: string;
+  verified_at: string;
 }
 
 interface Docs {
@@ -28,7 +30,9 @@ interface Docs {
   filePath: string;
   fileUrl: string;
   status: string;
-  uploadedAt: string;
+  verified_at: string;
+  file_name: string;
+  comment: string;
 }
 
 const DashboardPage: React.FC = () => {
@@ -93,6 +97,7 @@ const DashboardPage: React.FC = () => {
         .select("*")
         .order("submitted_at", { ascending: false })
         .limit(5);
+        setDocs(Array.isArray(data) ? data : [])
       if (error) console.error(error);
       else setDocs(data || []);
     } catch (err) {
@@ -212,7 +217,21 @@ const DashboardPage: React.FC = () => {
                   <th className="py-2">Status</th>
                   <th className="py-2">Notes</th>
                 </tr>
+                <tr>
+                  <td></td>
+                </tr>
               </thead>
+              <tbody>
+                {docs.map((a) => (
+                  <tr key={a.id} className="hover:bg-gray-50">
+                    <td className="py-2">{new Date(a.verified_at).toLocaleDateString()}</td>
+                    <td className="py-2">-</td>
+                    <td className="py-2">{a.file_name || 'N/A'}</td>
+                    <td className="py-2">{a.status}</td>
+                    <td className="py-2">{a.comment || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
               <tbody>
                 {activity.map((a) => (
                   <tr key={a.id} className="hover:bg-gray-50">
