@@ -9,6 +9,8 @@ import Hero from "./components/Hero";
 import Steps from "./components/Steps";
 import Features from "./components/Features";
 import Footer from "./components/Footer";
+import PartnersSection from "./components/PartnersSection";
+import ColorStrip from "./components/colorstrip";
 
 // Pages
 import ServicesPage from "./Screens/Services";
@@ -57,6 +59,8 @@ const App = () => {
             <>
               <Header />
               <Hero />
+              <ColorStrip />
+              <PartnersSection />
               <Steps />
               <Features />
             </>

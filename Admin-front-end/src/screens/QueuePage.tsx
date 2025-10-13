@@ -6,8 +6,17 @@ import TopPanel from "../components/TopPanel";
 import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
+<<<<<<< Updated upstream
 interface Document{
   id: string
+=======
+<<<<<<< Updated upstream
+interface DocumentItem {
+=======
+interface Document {
+  id: string
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
   document_id: string;
   file_url: string
   fileName: string
@@ -30,25 +39,25 @@ export default function QueuePage() {
 
   useEffect(() => {
 
-    async function getAllDocuments(){
-        try{
-        const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+    async function getAllDocuments() {
+      try {
+        const res = await fetch(`http://localhost:4000/documents/?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setDocs(docs);
-      }catch(err){
+      } catch (err) {
         console.error("Error while fetching documents: ", err);
       }
     }
 
     //api call to the backend to fetch documents with "pending" status
-    async function getAllDocs2(){
-      try{
-        const res = await fetch(`http://localhost:5000/documents?status=pending`)
+    async function getAllDocs2() {
+      try {
+        const res = await fetch(`http://localhost:4000/documents?status=pending`)
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
-      }catch(err){
+      } catch (err) {
         console.error("Error while fetching documents: ", err);
       }
     }
@@ -88,14 +97,51 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
+<<<<<<< Updated upstream
 
               { docs.length === 0 ? (
+=======
+<<<<<<< Updated upstream
+              {loading ? (
+=======
+
+              {docs.length === 0 ? (
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
                   </td>
                 </tr>
               ) : (
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+                pendingDocs.map((doc, index) => {
+                  const submittedDate = doc.submitted_at ? new Date(doc.submitted_at) : null;
+                  return (
+                    <tr key={doc.document_id}>
+                      <td style={styles.td}>{index + 1}</td>
+                      <td style={styles.td}>{doc.doc_type || doc.file_name || "Document"}</td>
+                      <td style={styles.td}><span style={styles.statusPending}>{doc.status}</span></td>
+                      <td style={styles.td}>
+                        {submittedDate ? `${submittedDate.toLocaleDateString()} ${submittedDate.toLocaleTimeString()}` : "-"}
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <button
+                            style={styles.viewBtn}
+                            onClick={() => navigate(`/queueView/${doc.code_id ?? doc.document_id}`)}
+                          >
+                            View <MdVisibility />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+=======
+>>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => (
                   <tr key={doc.id}>
                     <td style={styles.td}>{index + 1}</td>
@@ -107,16 +153,29 @@ export default function QueuePage() {
                       {new Date(doc.submitted_at).toLocaleDateString()}, {new Date(doc.submitted_at).toLocaleTimeString()}
                     </td>
                     <td style={styles.td} className="flex">
+<<<<<<< Updated upstream
                       <button 
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                         style={styles.viewBtn} 
                         onClick={() => navigate(`/queueView/${doc.code_id}`)}
                       >
                         View<MdVisibility/>
+=======
+                      <button
+                        className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
+                        style={styles.viewBtn}
+                        onClick={() => navigate(`/queueView/${doc.code_id}`)}
+                      >
+                        View<MdVisibility />
+>>>>>>> Stashed changes
                       </button>
                     </td>
                   </tr>
                 ))
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
               )}
             </tbody>
           </table>
