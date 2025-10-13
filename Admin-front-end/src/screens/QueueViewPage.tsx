@@ -46,7 +46,7 @@ export default function QueueViewPage() {
   const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
   const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
   
-  const paragraph = "state: Verified and Certified \nBy: Admin Marc Yusufu. \nThis document is Valid. \nDate: 19th September 2025"
+  const paragraph = "state: Verified and Certified \n By: Admin Marc Yusufu. \n This document is Valid. \n Date: 19th September 2025"
 
   const navigate = useNavigate();
 
@@ -94,7 +94,7 @@ export default function QueueViewPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stampText: paragraph}),
+          body: JSON.stringify({ stampText: paragraph, code_id: code_id}),
         }
       );
       console.log("Response: ", res);

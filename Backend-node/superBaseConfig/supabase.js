@@ -12,7 +12,7 @@ if(!supabaseUrl || !supabaseKey){
     throw error("Supabase Key and URL required")
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey, supabaseServiceRoleKey);
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 export default supabase
         

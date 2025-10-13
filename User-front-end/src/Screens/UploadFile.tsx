@@ -12,7 +12,7 @@ import {
     documentTextOutline,
     closeOutline,
 } from "ionicons/icons";
-import { s } from "framer-motion/dist/types.d-Bq-Qm38R";
+//import { s } from "framer-motion/dist/types.d-Bq-Qm38R";
 
 const BUCKET_ID = "userDocuments";
 

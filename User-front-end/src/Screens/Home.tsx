@@ -21,7 +21,7 @@ const BUCKET_ID = "userDocuments";
 
 const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
   Verified: { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
-  Pending: { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
+  pending: { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
   "Not verified": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
   "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
@@ -192,9 +192,9 @@ export default function Home(): JSX.Element {
               <div className="absolute mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-md w-40 z-20">
                 {[
                   "All",
-                  "Verified",
-                  "Pending",
-                  "Not verified",
+                  "pending",
+                  "Approved",
+                  "Rejected",
                   "Fraud detected",
                 ].map((status) => (
                   <button
