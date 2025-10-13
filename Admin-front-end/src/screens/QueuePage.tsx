@@ -7,15 +7,21 @@ import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 interface Document {
   id: string
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 interface DocumentItem {
 =======
 interface Document {
   id: string
 >>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   document_id: string;
   file_url: string
@@ -42,7 +48,11 @@ export default function QueuePage() {
     async function getAllDocuments() {
       try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         const res = await fetch(`http://localhost:5000/documents/?status=pending`)
+=======
+        const res = await fetch(`http://localhost:4000/documents/?status=pending`)
+>>>>>>> Stashed changes
 =======
         const res = await fetch(`http://localhost:4000/documents/?status=pending`)
 >>>>>>> Stashed changes
@@ -58,7 +68,11 @@ export default function QueuePage() {
     async function getAllDocs2() {
       try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         const res = await fetch(`http://localhost:5000/documents?status=pending`)
+=======
+        const res = await fetch(`http://localhost:4000/documents?status=pending`)
+>>>>>>> Stashed changes
 =======
         const res = await fetch(`http://localhost:4000/documents?status=pending`)
 >>>>>>> Stashed changes
@@ -106,15 +120,21 @@ export default function QueuePage() {
             </thead>
             <tbody>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
               {docs.length === 0 ? (
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
               {loading ? (
 =======
 
               {docs.length === 0 ? (
 >>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 <tr>
                   <td colSpan={5} style={styles.td}>
@@ -123,8 +143,11 @@ export default function QueuePage() {
                 </tr>
               ) : (
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => {
                   const submittedDate = doc.submitted_at ? new Date(doc.submitted_at) : null;
                   return (
@@ -149,6 +172,9 @@ export default function QueuePage() {
                   );
                 })
 =======
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => (
                   <tr key={doc.id}>
@@ -172,6 +198,9 @@ export default function QueuePage() {
                   </tr>
                 ))
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 >>>>>>> Stashed changes
