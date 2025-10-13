@@ -6,23 +6,8 @@ import TopPanel from "../components/TopPanel";
 import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 interface Document {
   id: string
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-interface DocumentItem {
-=======
-interface Document {
-  id: string
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   document_id: string;
   file_url: string
   fileName: string
@@ -47,15 +32,7 @@ export default function QueuePage() {
 
     async function getAllDocuments() {
       try {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
         const res = await fetch(`http://localhost:5000/documents/?status=pending`)
-=======
-        const res = await fetch(`http://localhost:4000/documents/?status=pending`)
->>>>>>> Stashed changes
-=======
-        const res = await fetch(`http://localhost:4000/documents/?status=pending`)
->>>>>>> Stashed changes
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setDocs(docs);
@@ -67,15 +44,7 @@ export default function QueuePage() {
     //api call to the backend to fetch documents with "pending" status
     async function getAllDocs2() {
       try {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
         const res = await fetch(`http://localhost:5000/documents?status=pending`)
-=======
-        const res = await fetch(`http://localhost:4000/documents?status=pending`)
->>>>>>> Stashed changes
-=======
-        const res = await fetch(`http://localhost:4000/documents?status=pending`)
->>>>>>> Stashed changes
         const docs = await res.json()
         console.log('Document list: ', docs) //for console while debugging
         setPendingDocs(Array.isArray(docs) ? docs : []); //if it isn't an array, fallback to [] so that the page doesn't crash
@@ -119,63 +88,14 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
               {docs.length === 0 ? (
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-              {loading ? (
-=======
-
-              {docs.length === 0 ? (
->>>>>>> Stashed changes
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                 <tr>
                   <td colSpan={5} style={styles.td}>
                     📂 No pending documents found.
                   </td>
                 </tr>
               ) : (
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-                pendingDocs.map((doc, index) => {
-                  const submittedDate = doc.submitted_at ? new Date(doc.submitted_at) : null;
-                  return (
-                    <tr key={doc.document_id}>
-                      <td style={styles.td}>{index + 1}</td>
-                      <td style={styles.td}>{doc.doc_type || doc.file_name || "Document"}</td>
-                      <td style={styles.td}><span style={styles.statusPending}>{doc.status}</span></td>
-                      <td style={styles.td}>
-                        {submittedDate ? `${submittedDate.toLocaleDateString()} ${submittedDate.toLocaleTimeString()}` : "-"}
-                      </td>
-                      <td style={styles.td}>
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                          <button
-                            style={styles.viewBtn}
-                            onClick={() => navigate(`/queueView/${doc.code_id ?? doc.document_id}`)}
-                          >
-                            View <MdVisibility />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-=======
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => (
                   <tr key={doc.id}>
                     <td style={styles.td}>{index + 1}</td>
@@ -197,13 +117,6 @@ export default function QueuePage() {
                     </td>
                   </tr>
                 ))
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
               )}
             </tbody>
           </table>
