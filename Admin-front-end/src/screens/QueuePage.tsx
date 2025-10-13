@@ -7,15 +7,21 @@ import { MdVisibility } from "react-icons/md";
 import { supabase } from "../Authentication/supabaseconfig";
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 interface Document{
   id: string
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 interface DocumentItem {
 =======
 interface Document {
   id: string
 >>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   document_id: string;
   file_url: string
@@ -98,15 +104,21 @@ export default function QueuePage() {
             </thead>
             <tbody>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
               { docs.length === 0 ? (
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
               {loading ? (
 =======
 
               {docs.length === 0 ? (
 >>>>>>> Stashed changes
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 <tr>
                   <td colSpan={5} style={styles.td}>
@@ -115,8 +127,11 @@ export default function QueuePage() {
                 </tr>
               ) : (
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
 <<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => {
                   const submittedDate = doc.submitted_at ? new Date(doc.submitted_at) : null;
                   return (
@@ -141,6 +156,9 @@ export default function QueuePage() {
                   );
                 })
 =======
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                 pendingDocs.map((doc, index) => (
                   <tr key={doc.id}>
@@ -154,6 +172,7 @@ export default function QueuePage() {
                     </td>
                     <td style={styles.td} className="flex">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                       <button 
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                         style={styles.viewBtn} 
@@ -161,18 +180,26 @@ export default function QueuePage() {
                       >
                         View<MdVisibility/>
 =======
+=======
+>>>>>>> Stashed changes
                       <button
                         className="text-blue-600 font-bold text-[14px] flex justify-center hover:bg-white"
                         style={styles.viewBtn}
                         onClick={() => navigate(`/queueView/${doc.code_id}`)}
                       >
                         View<MdVisibility />
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                       </button>
                     </td>
                   </tr>
                 ))
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 >>>>>>> Stashed changes
