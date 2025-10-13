@@ -232,6 +232,8 @@ app.post("/documents/:code_id/approve", async (req, res) => {
     let stampedBuffer;
     let stampedFileName = `${Date.now()}_${doc.file_name}`;
 
+    //const stampImage = await fs.readFile("/assets/stamp.jpg")
+
     // //Apply stamp based on file type
     // if (doc.doc_type === "application/pdf") {
     //   const pdfDoc = await PDFDocument.load(buffer);
@@ -315,11 +317,18 @@ app.post("/documents/:code_id/approve", async (req, res) => {
         //   .toBuffer();
 
           // Use SVG watermark instead of canvas
+      // const svgWatermark = Buffer.from(
+      //   `<svg width="400" height="${lines.length * 35 + 20}>
+      //     <text x="200" y="60" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${lines}</text>
+      //   </svg>`
+      // );
+
       const svgWatermark = Buffer.from(
-        `<svg width="400" height="${lines.length * 35 + 20} flex="1">
-          <text x="200" y="60" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${lines}</text>
-        </svg>`
-      );
+  `<svg width="400" height="${lines.length * 35 + 20}">
+    ${lines.map((line, i) => 
+      `<text x="200" y="${30 + i * 35}" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${line}</text>`
+    ).join('')}
+  </svg>`);
       
       console.log("SVG watermark created, length:", svgWatermark.length);
       

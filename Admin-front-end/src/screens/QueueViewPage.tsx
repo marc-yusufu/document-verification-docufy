@@ -45,8 +45,13 @@ export default function QueueViewPage() {
   const [displayDoc, setDisplayDoc] = useState<Docs | null>();
   const [loadingDoc, setLoadingDoc] = useState(true); // for fetching document
   const [loadingAction, setLoadingAction] = useState(false); // for approve/reject
-  
-  const paragraph = "state: Verified and Certified \n By: Admin Marc Yusufu. \n This document is Valid. \n Date: 19th September 2025"
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+    
+  const paragraph = `state: Verified and Certified \n By: Admin Marc Yusufu. \n This document is Valid. \n Date: ${currentDate}`;
 
   const navigate = useNavigate();
 

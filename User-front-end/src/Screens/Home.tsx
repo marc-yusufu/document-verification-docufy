@@ -20,9 +20,9 @@ import { Document, DocumentStatus } from "../Screens/types";
 const BUCKET_ID = "userDocuments";
 
 const statusStyles: Record<DocumentStatus, { color: string; icon: string }> = {
-  Verified: { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
-  pending: { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
-  "Not verified": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
+  "Approved": { color: "text-green-700", icon: "/IconPac/shield-trust.png" },
+  "pending": { color: "text-yellow-700", icon: "/IconPac/circle-dashed.png" },
+  "Rejected": { color: "text-gray-700", icon: "/IconPac/cross-circle.png" },
   "Fraud detected": { color: "text-red-700", icon: "/IconPac/exclamation.png" },
 };
 
