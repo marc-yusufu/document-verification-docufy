@@ -53,9 +53,9 @@ const DashboardPage: React.FC = () => {
   // --- Fetch Quick Stats ---
   const fetchStats = async () => {
     try {
-      const pendingRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "pending");
-      const approvedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "approved");
-      const rejectedRes = await supabase.from("recent_activity").select("*", { count: "exact", head: true }).eq("status", "rejected");
+      const pendingRes = await supabase.from("documents").select("*", { count: "exact", head: true }).eq("status", "pending");
+      const approvedRes = await supabase.from("documents").select("*", { count: "exact", head: true }).eq("status", "Approved");
+      const rejectedRes = await supabase.from("documents").select("*", { count: "exact", head: true }).eq("status", "Rejected");
 
       const avgTime = 136; // placeholder, replace with real calculation
 
@@ -91,7 +91,7 @@ const DashboardPage: React.FC = () => {
       const { data, error } = await supabase
         .from("documents")
         .select("*")
-        .order("uploadedAt", { ascending: false })
+        .order("submitted_at", { ascending: false })
         .limit(5);
       if (error) console.error(error);
       else setDocs(data || []);

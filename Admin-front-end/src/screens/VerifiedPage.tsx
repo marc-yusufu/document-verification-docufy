@@ -7,7 +7,8 @@ import { supabase } from "../Authentication/supabaseconfig";
 interface Document {
   document_id: string;
   type: string;
-  file_url: string;
+  //file_url: string;
+  file_path: string;
   status: string;
   submitted_at: string;
   signed_url?: string;
@@ -25,8 +26,8 @@ export default function VerifiedPage() {
       try {
         const { data, error } = await supabase
           .from("documents")
-          .select("document_id, type, file_url, status, submitted_at")
-          .in("status", ["approved", "rejected"])
+          .select("document_id, type, file_path, status, submitted_at")
+          .in("status", ["Approved", "Rejected"])
           .order("submitted_at", { ascending: false });
 
         if (error) throw error;
@@ -35,7 +36,7 @@ export default function VerifiedPage() {
           data.map(async (doc) => {
             const { data: signed } = await supabase.storage
               .from("userDocuments")
-              .createSignedUrl(doc.file_url, 60 * 60);
+              .createSignedUrl(doc.file_path, 60 * 60);
             return { ...doc, signed_url: signed?.signedUrl || "" };
           })
         );
@@ -102,10 +103,10 @@ export default function VerifiedPage() {
                       {new Date(doc.submitted_at).toLocaleTimeString()}
                     </td>
                     <td style={styles.td}>
-                      {doc.status === "approved" && (
+                      {doc.status === "Approved" && (
                         <span style={styles.statusApproved}>✔ Approved</span>
                       )}
-                      {doc.status === "rejected" && (
+                      {doc.status === "Rejected" && (
                         <span style={styles.statusRejected}>✖ Rejected</span>
                       )}
                     </td>

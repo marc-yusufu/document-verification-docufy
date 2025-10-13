@@ -13,6 +13,9 @@ import sharp from "sharp";
 import fs from "fs";
 import Mailjet from 'node-mailjet';
 
+import { createCanvas, registerFont } from "canvas";
+
+
 
 //import { supabase } from "./supabaseClient"; // your service key init
 const router = express.Router();
@@ -196,7 +199,8 @@ app.put('/documents/:id/status', async (req, res) => {
 //Admin puts approval stamp on document by pressing approve button
 app.post("/documents/:code_id/approve", async (req, res) => {
   const { code_id } = req.params;
-  const stampText = req.body.stampText || "APPROVED"; // or dynamic code
+  const stampText = req.body.stampText || "APPROVED";
+  const lines = stampText.split('\n'); // or dynamic code
   const BUCKET_ID = "userDocuments";
   try {
     //Fetch the raw document metadata
@@ -219,41 +223,118 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       .from(BUCKET_ID)
       .download(doc.file_path)
 
-    if (downloadError || !doc) throw downloadError;
+    if (downloadError || !fileData){
+      console.log("Coudn't download file: ", downloadError);
+      return res.status(500).json({ error: "Failed to download file" });
+    };
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
     let stampedBuffer;
     let stampedFileName = `${Date.now()}_${doc.file_name}`;
 
-    //Apply stamp based on file type
-    if (doc.doc_type === "application/pdf") {
-      const pdfDoc = await PDFDocument.load(buffer);
-      const pages = pdfDoc.getPages();
+    // //Apply stamp based on file type
+    // if (doc.doc_type === "application/pdf") {
+    //   const pdfDoc = await PDFDocument.load(buffer);
+    //   const pages = pdfDoc.getPages();
 
-      pages.forEach((page) => {
-        page.drawText(stampText, {
-          x: 50,
-          y: 50,
-          size: 40,
-          color: rgb(1, 0, 0),
-          opacity: 0.5,
-        });
-      });
+    //   pages.forEach((page) => {
+    //     page.drawText(stampText, {
+    //       x: 50,
+    //       y: 50,
+    //       size: 40,
+    //       color: rgb(1, 0, 0),
+    //       opacity: 0.5,
+    //     });
+    //   });
 
-      stampedBuffer = Buffer.from(await pdfDoc.save());
+    //   stampedBuffer = Buffer.from(await pdfDoc.save());
       
-    } else if (doc.doc_type.startsWith("image/")) {
+    // } else if (doc.doc_type.startsWith("image/")) {
+    //   const svgWatermark = Buffer.from(
+    //     `<svg width="500" height="500">
+    //       <text x="20" y="50" font-size="30" fill="red" opacity="0.5">${stampText}</text>
+    //     </svg>`
+    //   );
+    //   stampedBuffer = await sharp(buffer)
+    //     .composite([{ input: svgWatermark, gravity: "southeast" }])
+    //     .toBuffer();
+    //   stampedFileName = `${Date.now()}_${doc.file_name}`;
+    // } else {
+    //   return res.status(400).json({ error: "Unsupported file type" });
+    // }
+
+        // Apply transparent red text
+    try {
+      console.log("Document type:", doc.doc_type);
+      
+      if (doc.doc_type === "application/pdf") {
+        console.log("Processing PDF...");
+        const pdfDoc = await PDFDocument.load(buffer);
+        console.log("PDF loaded, pages:", pdfDoc.getPageCount());
+        const pages = pdfDoc.getPages();
+        
+        pages.forEach((page) =>
+          page.drawText(stampText, {
+            x: page.getWidth() - 200,
+            y: 50,
+            size: 36,
+            color: rgb(1, 0, 0),
+            opacity: 0.5,
+          })
+        );
+        console.log("Stamp added to PDF");
+        
+        stampedBuffer = Buffer.from(await pdfDoc.save());
+
+        console.log("PDF saved");
+        
+      } else if (doc.doc_type.startsWith("image/")) {
+
+        console.log("Processing image...");
+
+        // const canvas = createCanvas(400, 100);
+        // const ctx = canvas.getContext("2d");
+        // ctx.font = "bold 48px sans-serif";
+        // ctx.fillStyle = "rgba(255,0,0,0.5)";
+        // ctx.textAlign = "center";
+        // ctx.fillText(stampText, 200, 60);
+        // console.log("Stamp overlay created");
+        
+        // const stampOverlay = canvas.toBuffer("png");
+
+        // console.log("Buffer length:", buffer.length);
+        // console.log("Stamp overlay length:", stampOverlay.length);
+        // console.log("About to call sharp with buffer...");
+
+        // stampedBuffer = await sharp(buffer)
+        //   .png()
+        //   .composite([{ 
+        //     input: stampOverlay, 
+        //     gravity: "southeast" 
+        //   }])
+        //   .toBuffer();
+
+          // Use SVG watermark instead of canvas
       const svgWatermark = Buffer.from(
-        `<svg width="500" height="500">
-          <text x="20" y="50" font-size="30" fill="red" opacity="0.5">${stampText}</text>
+        `<svg width="400" height="${lines.length * 35 + 20} flex="1">
+          <text x="200" y="60" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${lines}</text>
         </svg>`
       );
+      
+      console.log("SVG watermark created, length:", svgWatermark.length);
+      
       stampedBuffer = await sharp(buffer)
         .composite([{ input: svgWatermark, gravity: "southeast" }])
         .toBuffer();
-      stampedFileName = `${Date.now()}_${doc.file_name}`;
-    } else {
-      return res.status(400).json({ error: "Unsupported file type" });
+
+        console.log("Image composited");
+        
+      } else {
+        return res.status(400).json({ error: "Unsupported file type" });
+      }
+    } catch (error) {
+      console.error("Stamping error details:", error);
+      return res.status(500).json({ error: "Failed to stamp document", details: error.message });
     }
 
     //Upload stamped file to Supabase storage
