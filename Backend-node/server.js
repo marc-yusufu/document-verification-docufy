@@ -317,6 +317,7 @@ app.post("/documents/:code_id/approve", async (req, res) => {
         //   .toBuffer();
 
           // Use SVG watermark instead of canvas
+<<<<<<< Updated upstream
       // const svgWatermark = Buffer.from(
       //   `<svg width="400" height="${lines.length * 35 + 20}>
       //     <text x="200" y="60" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${lines}</text>
@@ -324,11 +325,19 @@ app.post("/documents/:code_id/approve", async (req, res) => {
       // );
 
       const svgWatermark = Buffer.from(
+=======
+const svgWatermark = Buffer.from(
+>>>>>>> Stashed changes
   `<svg width="400" height="${lines.length * 35 + 20}">
     ${lines.map((line, i) => 
       `<text x="200" y="${30 + i * 35}" font-size="28" font-weight="bold" fill="darkred" opacity="0.5" text-anchor="middle">${line}</text>`
     ).join('')}
+<<<<<<< Updated upstream
   </svg>`);
+=======
+  </svg>`
+);
+>>>>>>> Stashed changes
       
       console.log("SVG watermark created, length:", svgWatermark.length);
       
