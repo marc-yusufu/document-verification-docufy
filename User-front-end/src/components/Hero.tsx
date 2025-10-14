@@ -22,6 +22,9 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 max-w-2xlg space-y-6" data-aos="fade-up">
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         {/* Hero Title */}
         <SplitText
