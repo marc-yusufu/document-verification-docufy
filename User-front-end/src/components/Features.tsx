@@ -22,6 +22,7 @@ const messages = [
 ];
 
 const Features = () => {
+
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ const Features = () => {
     );
     return () => clearInterval(interval);
   }, []);
+
 
   return (
     <section

@@ -17,7 +17,9 @@ const Hero = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/70"></div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-2xl space-y-6" data-aos="fade-up">
+
+      <div className="relative z-10 max-w-2xlg space-y-6" data-aos="fade-up">
+
         {/* Hero Title */}
         <SplitText
           text="Get your documents verified"
