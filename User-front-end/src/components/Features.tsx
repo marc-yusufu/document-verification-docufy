@@ -1,6 +1,19 @@
 import { Link } from "react-router-dom";
 
 const Features = () => {
+<<<<<<< Updated upstream
+=======
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(
+      () => setIndex((prev) => (prev + 1) % messages.length),
+      4000
+    );
+    return () => clearInterval(interval);
+  }, []);
+
+>>>>>>> Stashed changes
   return (
     <section id="services" className="bg-white py-14 px-4 md:px-16 flex flex-col-reverse md:flex-row items-center gap-10">
       <div className="md:flex-1" data-aos="fade-right">

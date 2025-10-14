@@ -7,8 +7,22 @@ const Hero = () => {
       id="hero"
       className="relative min-h-[99vh] bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 md:px-16 py-20 flex flex-col md:flex-row justify-between items-center gap-10"
     >
+<<<<<<< Updated upstream
       {/* Left Content */}
       <div className="max-w-xl space-y-6 text-left" data-aos="fade-right">
+=======
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center grayscale brightness-85"
+        style={{ backgroundImage: "url('../../public/BG.jpg')" }}
+      ></div>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/70"></div>
+
+      {/* Content */}
+      <div className="relative z-10 max-w-2xlg space-y-6" data-aos="fade-up">
+>>>>>>> Stashed changes
         {/* Hero Title */}
         <SplitText
           text="Get your documents verified"
