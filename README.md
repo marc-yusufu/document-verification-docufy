@@ -2,6 +2,20 @@ DOCUMENT VERIFICATION SYSTEM:
 
 Group name: Bug Slayers
 
+CONTRIBUTORS: 
+
+-MD Lichaba - Designer, Backend.
+
+-TL Monyeki - Business Analyst.
+
+-M Yusufu - Frontend, Backend.
+
+-S Hokwana - Project Manager, Frontend.
+
+-N Moses - Business Analyst.
+
+-KO Mooketsi - Designer.
+
 A web-based document verification system designed to ensure the authenticity of user-submitted documents while maintaining a required level of human oversight.
 This project streamlines the verification workflow for organisations that need to validate user documents (such as IDs, certificates, or permits) 
 but still requires an admin to confirm authenticity in accordance with regulations.
@@ -74,16 +88,3 @@ FUTURE IMPROVEMENTS:
 -Audit logs for admin verification actions.
 
 
-CONTRIBUTORS: [Initials, Surname]
-
--MD Lichaba - Designer, Backend.
-
--TL Monyeki - Business Analyst.
-
--M Yusufu - Frontend, Backend.
-
--S Hokwana - Project Manager, Frontend.
-
--N Moses - Business Analyst.
-
--KO Mooketsi - Designer.
