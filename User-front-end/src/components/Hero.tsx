@@ -7,10 +7,10 @@ const Hero = () => {
       id="hero"
       className="relative min-h-[99vh] bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 md:px-16 py-20 flex flex-col md:flex-row justify-between items-center gap-10"
     >
-<<<<<<< Updated upstream
+
       {/* Left Content */}
       <div className="max-w-xl space-y-6 text-left" data-aos="fade-right">
-=======
+
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center grayscale brightness-85"
@@ -22,13 +22,7 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 max-w-2xlg space-y-6" data-aos="fade-up">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
         {/* Hero Title */}
         <SplitText
           text="Get your documents verified"
@@ -96,6 +90,7 @@ const Hero = () => {
           alt="Scroll down"
           className="w-6 h-6 md:w-8 md:h-8"
         />
+      </div>
       </div>
     </section>
   );
