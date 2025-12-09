@@ -5,12 +5,8 @@ const Hero = () => {
   return (
     <section
       id="hero"
-      className="relative min-h-[99vh] bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 md:px-16 py-20 flex flex-col md:flex-row justify-between items-center gap-10"
+      className="relative min-h-[86vh] flex flex-col justify-center items-center text-center text-white mt-20 px-4 py-20 overflow-hidden"
     >
-
-      {/* Left Content */}
-      <div className="max-w-xl space-y-6 text-left" data-aos="fade-right">
-
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center grayscale brightness-85"
@@ -21,6 +17,7 @@ const Hero = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/70"></div>
 
       {/* Content */}
+
       <div className="relative z-10 max-w-2xlg space-y-6" data-aos="fade-up">
 
         {/* Hero Title */}
@@ -29,17 +26,17 @@ const Hero = () => {
           splitType="chars"
           delay={80}
           duration={0.7}
-          textAlign = "start"
+          textAlign="center"
           className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight"
         />
 
         {/* Rotating Text Section */}
-        <div className="flex items-center gap-2">
+        <div className="flex justify-center items-center gap-2">
           <p className="text-2xl font-medium">It's</p>
           <RotatingText
-            texts={['Quick', 'Simple']}
-            mainClassName="px-2 bg-white text-blue-500 overflow-hidden py-1 justify-center rounded-lg"
-            elementLevelClassName="text-2xl sm:text-3xl font-bold" // 👈 size here
+            texts={["Quick", "Simple", "eDocufy"]}
+            mainClassName="px-3 bg-white text-blue-600 overflow-hidden py-1 justify-center rounded-lg"
+            elementLevelClassName="text-2xl sm:text-3xl font-bold"
             staggerFrom="last"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -53,7 +50,8 @@ const Hero = () => {
 
         {/* Description */}
         <p className="text-lg text-white/70">
-          From upload to approval in minutes — experience the efficiency of our smart document verification system.
+          From upload to approval in minutes — experience the efficiency of our
+          smart document verification system.
         </p>
 
         {/* CTA Button */}
@@ -62,35 +60,25 @@ const Hero = () => {
             const el = document.getElementById("services");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }}
-          className="mt-4 bg-white text-blue-700 font-semibold px-6 py-2 rounded-full shadow hover:bg-blue-100 transition"
+          className="mt-6 bg-white text-blue-700 font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-blue-100 transition"
         >
           Get Started
         </button>
       </div>
 
-      {/* Right Image */}
-      <div data-aos="fade-left">
-        <img
-          src="/src/assets/19962851_6203999-Photoroom.png"
-          alt="Document Illustration"
-          className="w-72 md:w-96"
-        />
-      </div>
-
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator (Bottom Center) */}
       <div
-        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer animate-bounce opacity-50"
+        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 cursor-pointer animate-bounce opacity-70"
         onClick={() => {
           const el = document.getElementById("services");
           if (el) el.scrollIntoView({ behavior: "smooth" });
         }}
       >
         <img
-          src="/public/IconPac/angle-down.png"
+          src="/IconPac/angle-down.png"
           alt="Scroll down"
           className="w-6 h-6 md:w-8 md:h-8"
         />
-      </div>
       </div>
     </section>
   );
